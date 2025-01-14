@@ -39,6 +39,9 @@ univ_results <- lapply(univ_models,
 res <- t(as.data.frame(univ_results, check.names = FALSE))
 as.data.frame(res)
 
+#Re-format the data from "res" into a new table with the following headers:
+#Predictors	/ exp(coef)	/ lower0.95	/ upper0.95	/ pval
+
 tiff(".../UNIVARIATE Summary Cox Reg.tiff",
      width = 8, height = 4, unit = "cm", res=300)
 
@@ -68,6 +71,8 @@ data <- openxlsx::read.xlsx(".../Suppl. Table 14.xlsx")
 res.cox <- coxph(Surv(PFS, Recurrence) ~ OIS_UP_RNAseq_Only + Location_Group + Resection_Group +  MAPK_Group + Sex_Group + Age, data =  data)
 summary(res.cox)
 
+#Re-format the data from "res.cox" into a new table with the following headers:
+#Predictors	/ exp(coef)	/ lower0.95	/ upper0.95	/ pval
 
 tiff("C:/Users/romai/Desktop/Summary Cox Reg_Percents_3 groups_VF2_all features.tiff",
      width = 8, height = 4, unit = "cm", res=300)
