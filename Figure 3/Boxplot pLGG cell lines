@@ -1,0 +1,161 @@
+set.seed(123)
+library(openxlsx)
+library(ggplot2)
+library(tidyr)
+library(ComplexHeatmap)                                             
+library(circlize)
+library(ggpubr)
+source('D:/Work/07-MPAS project/Caroline/MPAS Project/00 R Skripte/00-ReadR2Data.R')
+
+####GRAPHS BT cell lines CTRL####
+dat1 <- read.xlsx(".../Suppl. Table 8.xlsx")
+dat1$subtype_new <- factor(dat1$subtype_new, levels = c("BT40_Ctrl",
+                                                        "BT314OFF_Ctrl", "BT314ON_Ctrl",
+                                                        "BT66_OFF_Ctrl", "BT66_ON_Ctrl",
+                                                        "BT308OFF_Ctrl", "BT308ON_Ctrl",
+                                                        "BT317OFF_Ctrl", "BT317ON_Ctrl"))
+
+dat1$Alt[dat1$subtype_new == "BT66_OFF_Ctrl"] <- paste("BRAF fusion",sep="" )
+dat1$Alt[dat1$subtype_new == "BT66_ON_Ctrl"] <- paste("BRAF fusion",sep="" )
+dat1$Alt[dat1$subtype_new == "BT308OFF_Ctrl"] <- paste("BRAF fusion",sep="" )
+dat1$Alt[dat1$subtype_new == "BT308ON_Ctrl"] <- paste("BRAF fusion",sep="" )
+dat1$Alt[dat1$subtype_new == "BT314OFF_Ctrl"] <- paste("BRAF mutation",sep="" )
+dat1$Alt[dat1$subtype_new == "BT314ON_Ctrl"] <- paste("BRAF mutation",sep="" )
+dat1$Alt[dat1$subtype_new == "BT40_Ctrl"] <- paste("BRAF mutation",sep="" )
+dat1$Alt[dat1$subtype_new == "BT317OFF_Ctrl"] <- paste("BRAF fusion",sep="" )
+dat1$Alt[dat1$subtype_new == "BT317ON_Ctrl"] <- paste("BRAF fusion",sep="" )
+
+dat1$Mode[dat1$subtype_new == "BT66_OFF_Ctrl"] <- paste("Senescent",sep="" )
+dat1$Mode[dat1$subtype_new == "BT66_ON_Ctrl"] <- paste("Proliferating",sep="" )
+dat1$Mode[dat1$subtype_new == "BT308OFF_Ctrl"] <- paste("Senescent",sep="" )
+dat1$Mode[dat1$subtype_new == "BT308ON_Ctrl"] <- paste("Proliferating",sep="" )
+dat1$Mode[dat1$subtype_new == "BT314OFF_Ctrl"] <- paste("Senescent",sep="" )
+dat1$Mode[dat1$subtype_new == "BT314ON_Ctrl"] <- paste("Proliferating",sep="" )
+dat1$Mode[dat1$subtype_new == "BT40_Ctrl"] <- paste("Proliferating",sep="" )
+dat1$Mode[dat1$subtype_new == "BT317OFF_Ctrl"] <- paste("Senescent",sep="" )
+dat1$Mode[dat1$subtype_new == "BT317ON_Ctrl"] <- paste("Proliferating",sep="" )
+
+dat1$Cell.Line[dat1$subtype_new == "BT66_OFF_Ctrl"] <- paste("BT66",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT66_ON_Ctrl"] <- paste("BT66",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT308OFF_Ctrl"] <- paste("BT308",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT308ON_Ctrl"] <- paste("BT308",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT314OFF_Ctrl"] <- paste("BT314",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT314ON_Ctrl"] <- paste("BT314",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT40_Ctrl"] <- paste("BT40",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT317OFF_Ctrl"] <- paste("BT317",sep="" )
+dat1$Cell.Line[dat1$subtype_new == "BT317ON_Ctrl"] <- paste("BT317",sep="" )
+
+dat1$OIS_UP..RNAseq.only. <- scale(dat1$OIS_UP..RNAseq.only.)
+dat1$OIS_UP..all.omics.layers. <- scale(dat1$OIS_UP..all.omics.layers.)
+dat1$OIS_DN..all.omics.layers. <- scale(dat1$OIS_DN..all.omics.layers.)
+
+###OIS_UP..RNAseq.only.###
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+  library(plyr)
+  # New version of length which can handle NA's: if na.rm==T, don't count them
+  length2 <- function (x, na.rm=FALSE) {
+    if (na.rm) sum(!is.na(x))
+    else       length(x)
+  }
+  # This does the summary. For each group's data frame, return a vector with
+  # N, mean, and sd
+  datac <- plyr::ddply(data, groupvars, .drop=.drop,
+                 .fun = function(xx, col) {
+                   c(N    = length2(xx[[col]], na.rm=na.rm),
+                     mean = mean   (xx[[col]], na.rm=na.rm),
+                     sd   = sd     (xx[[col]], na.rm=na.rm),
+                     median = median   (xx[[col]], na.rm=na.rm) 
+                   )
+                 },
+                 measurevar              
+  )
+  # Rename the "mean" column   
+  datac <- plyr::rename(datac, c("mean" = measurevar))
+  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+  # Confidence interval multiplier for standard error
+  # Calculate t-statistic for confidence interval:
+  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  datac$ci <- datac$se * ciMult
+  return(datac)
+}
+
+pdat_summary <- summarySE(dat1, measurevar = "OIS_UP..RNAseq.only.", groupvars = "Mode") 
+dat1$Mode_NEW<- factor(dat1$Mode, levels=c(pdat_summary[order(pdat_summary$median, decreasing = T),"Mode"]))
+
+tiff(".../01-OIS_RNAseq only.tiff", 
+     width = 3, height = 7, unit = "cm", res=300)
+
+ggplot(data = dat1, aes(x = Mode_NEW, y = OIS_UP..RNAseq.only.))+
+  stat_boxplot(geom = "errorbar", width = 0.3)+
+  geom_boxplot(outlier.shape = NA, width = 0.5)+
+  geom_jitter(aes(colour = subtype_new), size = 1, position = position_jitter(width = 0.2))+
+  theme(axis.text = element_text(color = "black", size = 6, angle = 45, vjust = 0.5, hjust=1),
+        legend.text = element_text(size = 6),
+        axis.title = element_text(size = 6))+
+  scale_x_discrete(labels=c("Proliferating" = "Proliferating\npLGG cells (n = 15)", 
+                            "Senescent" = "Senescent\npLGG cells (n = 12)"))+
+  labs(y= "OIS UP_RNAseq only\n(ssGSEA z-scores)", x = NULL)+
+  guides(colour = "none", size = "none")
+dev.off()
+
+aov_pdat <- aov(OIS_UP..RNAseq.only.~Mode_NEW, dat1) 
+summary(aov_pdat)
+Stat_summary<-TukeyHSD(aov_pdat)
+Stat_summary2 <-as.data.frame(Stat_summary[[1]])
+Stat_summary2[Stat_summary2$'p adj'<0.05, ]
+
+###OIS_UP..all.omics.layers. signature###
+pdat_summary <- summarySE(dat1, measurevar = "OIS_UP..all.omics.layers.", groupvars = "Mode") 
+dat1$Mode_NEW<- factor(dat1$Mode, levels=c(pdat_summary[order(pdat_summary$median, decreasing = T),"Mode"]))
+
+tiff(".../02-OIS UP_All Layers.tiff", 
+     width = 3, height = 7, unit = "cm", res=300)
+
+ggplot(data = dat1, aes(x = Mode_NEW, y = OIS_UP..all.omics.layers.))+
+  stat_boxplot(geom = "errorbar", width = 0.3)+
+  geom_boxplot(outlier.shape = NA, width = 0.5)+
+  geom_jitter(aes(colour = subtype_new), size = 1, position = position_jitter(width = 0.2))+
+  theme(axis.text = element_text(color = "black", size = 6, angle = 45, vjust = 0.5, hjust=1),
+        legend.text = element_text(size = 6),
+        axis.title = element_text(size = 6))+
+  scale_x_discrete(labels=c("Proliferating" = "Proliferating\npLGG cells (n = 15)", 
+                            "Senescent" = "Senescent\npLGG cells (n = 12)"))+
+  labs(y= "OIS_UP_OMICs\n(ssGSEA z-score)", x = NULL)+
+  guides(colour = "none", size = "none")
+
+dev.off()
+
+aov_pdat <- aov(OIS_UP..all.omics.layers.~Mode_NEW, dat1) 
+summary(aov_pdat)
+Stat_summary<-TukeyHSD(aov_pdat)
+Stat_summary2 <-as.data.frame(Stat_summary[[1]])
+Stat_summary2[Stat_summary2$'p adj'<0.05, ]
+
+###OIS_DN..all.omics.layers.i signature###
+pdat_summary <- summarySE(dat1, measurevar = "OIS_DN..all.omics.layers.", groupvars = "Mode") 
+dat1$Mode_NEW<- factor(dat1$Mode, levels=c(pdat_summary[order(pdat_summary$median),"Mode"]))
+
+tiff(".../03-OIS DN_All Layers.tiff", 
+     width = 3, height = 7, unit = "cm", res=300)
+
+ggplot(data = dat1, aes(x = Mode_NEW, y = OIS_DN..all.omics.layers.))+
+  stat_boxplot(geom = "errorbar", width = 0.3)+
+  geom_boxplot(outlier.shape = NA, width = 0.5)+
+  geom_jitter(aes(colour = subtype_new), size = 1, position = position_jitter(width = 0.2))+
+  theme(axis.text = element_text(color = "black", size = 6, angle = 45, vjust = 0.5, hjust=1),
+        legend.text = element_text(size = 6),
+        axis.title = element_text(size = 6))+
+  scale_x_discrete(labels=c("Proliferating" = "Proliferating\npLGG cells (n = 15)", 
+                            "Senescent" = "Senescent\npLGG cells (n = 12)"))+
+  labs(y= "OIS_DN_OMICs\n(ssGSEA z-score)", x = NULL)+
+  guides(colour = "none", size = "none")
+
+dev.off()
+
+aov_pdat <- aov(OIS_DN..all.omics.layers.~Mode_NEW, dat1) 
+summary(aov_pdat)
+Stat_summary<-TukeyHSD(aov_pdat)
+Stat_summary2 <-as.data.frame(Stat_summary[[1]])
+Stat_summary2[Stat_summary2$'p adj'<0.05, ]
