@@ -1,0 +1,351 @@
+library(MOFA2)
+library(tidyverse)
+library(pheatmap)
+library(openxlsx)
+
+set.seed(2020) 
+
+#########Step0 several iterations up to 15 factors to find the optimal number of factors####
+##Import matrices
+RNAseq <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "RNAseq")
+rownames(RNAseq) <- RNAseq$Row.names
+RNAseq <- RNAseq[,-c(1)]
+RNAseq <- data.matrix(RNAseq)
+RNAseq <- t(t(scale(RNAseq)))
+
+Prot <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "Proteomics")
+rownames(Prot) <- Prot$Row.names
+Prot <- Prot[,-c(1)]
+Prot <- data.matrix(Prot)
+Prot <- t(t(scale(Prot)))
+
+Phospho <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "Phospho-proteomics")
+rownames(Phospho) <- Phospho$Row.names
+Phospho <- Phospho[,-c(1)]
+Phospho <- data.matrix(Phospho)
+Phospho <- t(t(scale(Phospho)))
+
+#Make list of matrices with OMICs data
+data <- list(RNAseq = RNAseq, Prot = Prot, Phospho = Phospho)
+
+time <- read.xlsx(".../00-Time.xlsx")
+#Should be a table in the following format:
+#Row.names	BT66OFF_Control_1	BT66OFF_Control_2	BT66OFF_Control_3	BT66OFF_Control_4	BT66OFF_Tram15min_1	BT66OFF_Tram15min_2	BT66OFF_Tram15min_3	BT66OFF_Tram15min_4	BT66OFF_Tram1h_1	BT66OFF_Tram1h_2	BT66OFF_Tram1h_3	BT66OFF_Tram1h_4	BT66OFF_Tram6h_1	BT66OFF_Tram6h_2	BT66OFF_Tram6h_3	BT66OFF_Tram6h_4	BT66OFF_Tram24h_1	BT66OFF_Tram24h_2	BT66OFF_Tram24h_3	BT66OFF_Tram24h_4
+#Time	0	0	0	0	0.25	0.25	0.25	0.25	1	1	1	1	6	6	6	6	24	24	24	24
+time <- time[,-c(1)]
+time <- data.matrix(time)
+rownames(time) <- "time"
+
+#Prepare final list of matrices with covariates
+dd <- list(data = data, sample_cov = time)
+
+# Initialize the table to store output values
+results <- data.frame(num_factors = integer(),
+                      RNAseq = numeric(),
+                      Prot = numeric(),
+                      Phospho = numeric())
+
+# Define the maximum number of factors to test
+max_factors <- 15 
+
+for (num_factors in 1:max_factors) {
+  #Create MOFA object
+  sm <- create_mofa_from_matrix(data)
+  sm <- set_covariates(sm, covariates = time)
+  sm
+  
+  #To get default settings for MOFA training
+  data_opts <- get_default_data_options(sm)  
+  model_opts <- get_default_model_options(sm)
+  model_opts$num_factors <- num_factors              
+  
+  train_opts <- get_default_training_options(sm)
+
+  mefisto_opts <- get_default_mefisto_options(sm)
+  
+  sm <- prepare_mofa(sm, model_options = model_opts,
+                     mefisto_options = mefisto_opts,
+                     training_options = train_opts,
+                     data_options = data_opts)
+  
+  sm <- run_mofa(sm)
+  
+  #Calculate variance explained per layer
+  r2 <- calculate_variance_explained(sm)
+  r2 <- r2[["r2_per_factor"]][["group1"]]
+  r2 <- as.data.frame(r2)
+  r2$num_factor <- num_factors
+  row.names(r2) <- paste(row.names(r2),"_",num_factors)
+  
+  results <- rbind(results,r2)
+}
+
+write.xlsx(results, ".../Resuls.xlsx", rowNames = T)
+
+#########Step1 Create MOFA object####
+##Import matrices
+RNAseq <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "RNAseq")
+rownames(RNAseq) <- RNAseq$Row.names
+RNAseq <- RNAseq[,-c(1)]
+RNAseq <- data.matrix(RNAseq)
+RNAseq <- t(t(scale(RNAseq)))
+
+Prot <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "Proteomics")
+rownames(Prot) <- Prot$Row.names
+Prot <- Prot[,-c(1)]
+Prot <- data.matrix(Prot)
+Prot <- t(t(scale(Prot)))
+
+Phospho <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "Phospho-proteomics")
+rownames(Phospho) <- Phospho$Row.names
+Phospho <- Phospho[,-c(1)]
+Phospho <- data.matrix(Phospho)
+Phospho <- t(t(scale(Phospho)))
+
+#Make list of matrices with OMICs data
+data <- list(RNAseq = RNAseq, Prot = Prot, Phospho = Phospho)
+
+time <- read.xlsx(".../00-Time.xlsx")
+#Should be a table in the following format:
+#Row.names	BT66OFF_Control_1	BT66OFF_Control_2	BT66OFF_Control_3	BT66OFF_Control_4	BT66OFF_Tram15min_1	BT66OFF_Tram15min_2	BT66OFF_Tram15min_3	BT66OFF_Tram15min_4	BT66OFF_Tram1h_1	BT66OFF_Tram1h_2	BT66OFF_Tram1h_3	BT66OFF_Tram1h_4	BT66OFF_Tram6h_1	BT66OFF_Tram6h_2	BT66OFF_Tram6h_3	BT66OFF_Tram6h_4	BT66OFF_Tram24h_1	BT66OFF_Tram24h_2	BT66OFF_Tram24h_3	BT66OFF_Tram24h_4
+#Time	0	0	0	0	0.25	0.25	0.25	0.25	1	1	1	1	6	6	6	6	24	24	24	24
+time <- time[,-c(1)]
+time <- data.matrix(time)
+rownames(time) <- "time"
+
+#Prepare final list of matrices with covariates
+dd <- list(data = data, sample_cov = time)
+
+#Create MOFA object
+sm <- create_mofa_from_matrix(data)
+sm <- set_covariates(sm, covariates = time)
+sm
+
+
+###########Step 2 Prepare MOFA object####
+#To get default settings for MOFA training
+data_opts <- get_default_data_options(sm)
+#data_opts$scale_views <- TRUE
+
+model_opts <- get_default_model_options(sm)
+model_opts$num_factors <- 5                        #To change number of factors
+
+train_opts <- get_default_training_options(sm)
+
+mefisto_opts <- get_default_mefisto_options(sm)
+
+sm <- prepare_mofa(sm, model_options = model_opts,
+                   mefisto_options = mefisto_opts,
+                   training_options = train_opts,
+                   data_options = data_opts)
+
+
+#############Step 3 Run MOFA####
+sm <- run_mofa(sm)
+
+#Calculate variance explained per layer
+r2 <- calculate_variance_explained(sm)
+
+#Visualize the structure of the data
+plot_data_overview(sm)
+
+#############Step 4 Data analysis####
+#Total variance explained per view
+plot_variance_explained(sm, plot_total = T)[[2]]
+
+#Variance explained per factor
+plot_variance_explained(sm)
+
+#Correlation between factors
+r <- plot_factor_cor(sm)
+
+#Relate factors to timepoints
+get_scales(sm)
+
+#Plot factors weight through time
+plot_factors_vs_cov(sm, color_by = "time")
+
+#Exploration of weights
+#Plot weights
+plot_weights(sm, factors = 1, view = 1, nfeatures = 14)
+#Forest plot top weights
+plot_top_weights(sm, factors = 1, view = 1, nfeatures = 20, scale = T)
+#Plot indifividual genes/prot through time
+plot_data_vs_cov(sm, factor=3,
+                 view = 1,
+                 features = 9,
+                 color_by = "time",
+                 dot_size = 1)
+
+#Explore major genes/proteins
+#Scatter plot top 4
+plot_data_scatter(sm, 
+                  view = "RNAseq",
+                  factor = 2,  
+                  features = 4,
+                  sign = "negative",
+                  color_by = "time"
+) + labs(y="RNA expression")
+
+#Heatmap
+plot_data_heatmap(sm, 
+                  view = 1,
+                  factor = 1,  
+                  features = 14,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+
+# Fetch weights in matrix format (a list, one matrix per view)
+weights <- get_weights(sm, factor = 1, view = 2, scale = T, as.data.frame = TRUE)
+write.xlsx(weights, ".../Weights.xlsx")
+
+#FACTOR1 - Wave 3####
+#RNAseq
+plot_weights(sm, factors = 1, view = 1, nfeatures = 20)
+plot_top_weights(sm, factors = 1, view = 1, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 1,
+                  factor = 1,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 1, view = 1, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../RNAseq_Wave3_Weights.xlsx")
+
+#Proteomics
+plot_weights(sm, factors = 1, view = 2, nfeatures = 20)
+plot_top_weights(sm, factors = 1, view = 2, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 2,
+                  factor = 1,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 1, view = 2, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../Prot_Wave3_Weights.xlsx")
+
+#Phospho
+plot_weights(sm, factors = 1, view = 3, nfeatures = 20)
+plot_top_weights(sm, factors = 1, view = 3, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 3,
+                  factor = 1,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 1, view = 3, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../P_Prot_Wave3_Weights.xlsx")
+
+#FACTOR3 - Wave 1####
+#RNAseq
+plot_weights(sm, factors = 3, view = 1, nfeatures = 20)
+plot_top_weights(sm, factors = 3, view = 1, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 1,
+                  factor = 3,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+
+weights <- get_weights(sm, factor = 3, view = 1, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../RNAseq_Wave1_Weights.xlsx")
+
+#Proteomics
+plot_weights(sm, factors = 3, view = 2, nfeatures = 20)
+plot_top_weights(sm, factors = 3, view = 2, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 2,
+                  factor = 3,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 3, view = 2, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../Prot_Wave1_Weights.xlsx")
+
+#Phospho
+plot_weights(sm, factors = 3, view = 3, nfeatures = 20)
+plot_top_weights(sm, factors = 3, view = 3, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 3,
+                  factor = 3,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 3, view = 3, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../P_Prot_Wave1_Weights.xlsx")
+
+#FACTOR4 - Wave 4####
+#RNAseq
+plot_weights(sm, factors = 4, view = 1, nfeatures = 20)
+plot_top_weights(sm, factors = 4, view = 1, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 1,
+                  factor = 4,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 4, view = 1, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../RNAseq_Wave4_Weights.xlsx")
+
+#Proteomics
+plot_weights(sm, factors = 4, view = 2, nfeatures = 20)
+plot_top_weights(sm, factors = 4, view = 2, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 2,
+                  factor = 4,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 4, view = 2, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../Prot_Wave4_Weights.xlsx")
+
+#Phospho
+plot_weights(sm, factors = 4, view = 3, nfeatures = 20)
+plot_top_weights(sm, factors = 4, view = 3, nfeatures = 20, scale = T)
+plot_data_heatmap(sm, 
+                  view = 3,
+                  factor = 4,  
+                  features = 20,
+                  denoise = TRUE,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  show_rownames = TRUE, show_colnames = T,
+                  scale = "row"
+)
+weights <- get_weights(sm, factor = 4, view = 3, scale = T, as.data.frame = TRUE)
+weights$Absolute <- abs(weights$value)
+write.xlsx(weights, ".../P_Prot_Wave4_Weights.xlsx")
