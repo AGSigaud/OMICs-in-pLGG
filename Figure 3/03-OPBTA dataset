@@ -4,11 +4,41 @@ library(openxlsx)
 library(ggplot2) 
 library("ggpubr")
 library(dplyr)
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+  library(plyr)
+  # New version of length which can handle NA's: if na.rm==T, don't count them
+  length2 <- function (x, na.rm=FALSE) {
+    if (na.rm) sum(!is.na(x))
+    else       length(x)
+  }
+  # This does the summary. For each group's data frame, return a vector with
+  # N, mean, and sd
+  datac <- plyr::ddply(data, groupvars, .drop=.drop,
+                 .fun = function(xx, col) {
+                   c(N    = length2(xx[[col]], na.rm=na.rm),
+                     mean = mean   (xx[[col]], na.rm=na.rm),
+                     sd   = sd     (xx[[col]], na.rm=na.rm),
+                     median = median   (xx[[col]], na.rm=na.rm) 
+                   )
+                 },
+                 measurevar              
+  )
+  # Rename the "mean" column   
+  datac <- plyr::rename(datac, c("mean" = measurevar))
+  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+  # Confidence interval multiplier for standard error
+  # Calculate t-statistic for confidence interval:
+  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  datac$ci <- datac$se * ciMult
+  return(datac)
+}
 
 ###########################                                                                            
 #### Import data table ####
 ###########################
-dat1 <- openxlsx::read.xlsx("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-OIS-SASP signatures validation in patients/OPBTA/RNAseq/Annotations + ssGSEA scores - UPDATED.xlsx")   
+dat1 <- openxlsx::read.xlsx(".../Suppl. Table 10.xlsx")   
 
 ###################################
 #### Boxplot by broad entities ####
@@ -17,11 +47,7 @@ dat2 <- dat1
 dat2 <- dat2 %>% filter(broad_type != "NA")
 dat3 <- dat2 %>% filter(broad_type == "LGG")
 
-#OIS_UP..RNAseq.only.
-#OIS_UP..all.omics.layers.
-#OIS_DN..all.omics.layers.
-
-###BRAFi Type I####
+###OIS_UP RNAseq signature####
 pdat_summary <- summarySE(dat2, measurevar = "OIS_UP..RNAseq.only.", groupvars = "broad_type") 
 dat2$broad_type_NEW<- factor(dat2$broad_type, levels=c(pdat_summary[order(pdat_summary$median),"broad_type"]))
 
@@ -35,7 +61,7 @@ for (i in unique(dat2$broad_type_NEW)) {
   dat2[dat2$broad_type_NEW == i, "color"] <- ifelse(median(dat2[dat2$broad_type_NEW == i, "OIS_UP..RNAseq.only."]) < median_dataset, 0,1)
 }
 
-tiff("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-BT66OFF refined OIS-SASP signatures validation in patients/OPBTA/01-OIS_UP..RNAseq.only.Full cohort.tiff", 
+tiff(".../01-OIS_UP..RNAseq.only.Full cohort.tiff", 
      width = 9.5, height = 6.5, unit = "cm", res=300)
 ggplot(data = dat2, aes(x = broad_type_NEW, y = OIS_UP..RNAseq.only., fill = as.factor(color)))+  
   geom_hline(yintercept= median_dataset, linetype="dashed", color = "black", size=0.5)+
@@ -63,9 +89,6 @@ ggplot(data = dat2, aes(x = broad_type_NEW, y = OIS_UP..RNAseq.only., fill = as.
                             "LGG" = "LGG\n(n=285)"))+
   theme(legend.text=element_text(size= 6),
         legend.title=element_text(size=6))+ 
-  #panel.grid = element_blank(),
-  #panel.border = element_blank(),
-  #axis.line = element_line(colour = "black", size = 0.3))+
   theme(axis.title.x = element_text(size = 6))+
   theme(axis.title.y = element_text(size = 6))+
   theme(axis.text.x = element_text(size = 6, color = "black"))+
@@ -87,9 +110,8 @@ Stat_summary2[Stat_summary2$'p adj'<0.05, ]
 dat2 <- dat1 %>% filter(MAPK_alt_status != "NA" & MAPK_alt_status != "H3" & 
                           MAPK_alt_status != "IDH" & MAPK_alt_status != "MYB/MYBL1")
 dat2 <- dat2 %>% filter(broad_type == "LGG" | broad_type == "Normal Tissue")
-#dat2 <- dat2 %>% filter(primary_site != "Hippocampus")
 
-####New SASP####
+####OIS_UP RNA seq signature####
 pdat_summary <- summarySE(dat2, measurevar = "OIS_UP..RNAseq.only.", groupvars = "MAPK_Alt_Type") 
 dat2$primary_site_NEW<- factor(dat2$MAPK_Alt_Type, levels=c(pdat_summary[order(pdat_summary$median),"MAPK_Alt_Type"]))
 
@@ -97,7 +119,7 @@ dat2$OIS_UP..RNAseq.only. <- scale(dat2$OIS_UP..RNAseq.only.)
 
 median_dataset <- median(dat2$OIS_UP..RNAseq.only.)
 
-tiff("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-BT66OFF refined OIS-SASP signatures validation in patients/OPBTA/03-OIS_UP..RNAseq.only.tiff", 
+tiff(".../03-OIS_UP..RNAseq.only_By alteration.tiff", 
      width = 9, height = 7, unit = "cm", res=300)
 
 ggplot(data = dat2, aes(x = primary_site_NEW, y = OIS_UP..RNAseq.only., fill=primary_site_NEW))+               
@@ -139,20 +161,3 @@ summary(aov_pdat)
 Stat_summary<-TukeyHSD(aov_pdat)
 Stat_summary2 <-as.data.frame(Stat_summary[[1]])
 Stat_summary2[Stat_summary2$'p adj'<0.05, ]
-
-
-
-
-####Correlation with MPAS####
-dat2 <- dat1 %>% filter(MAPK_alt_status != "NA" & MAPK_alt_status != "H3" & 
-                          MAPK_alt_status != "IDH" & MAPK_alt_status != "MYB/MYBL1"&
-                          MAPK_alt_status != "MAPK Wild-type")
-dat2 <- dat2 %>% filter(broad_type == "LGG") # | broad_type == "Normal Tissue")
-ggscatter(dat2, x = "OIS_UP..RNAseq.only.", y = "PFS_days", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef.label.y = c(4),
-          #col = "MAPK_alt_status",
-          ggtheme = theme_pubr(base_size = 10, legend = c('bottom')),
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "SASP ssGSEA score", ylab = "MPAS ssGSEA score")
-  #stat_cor(aes(color = "MAPK_alt_status"))
