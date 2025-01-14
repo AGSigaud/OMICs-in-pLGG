@@ -1,0 +1,76 @@
+set.seed(123)
+library(openxlsx)
+library(tidyverse)
+library(kml)
+library(reshape2)
+library(gghighlight)
+library(ggpubr)
+
+#######RNAseq#########
+#Import data
+dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 1)
+#Make a matrix
+rownames(dat1) <- dat1$Name
+mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
+#row normalize
+mat1_scaled = t(scale(t(mat1)))
+
+# create clusterLongData object
+survey_data_cld <- kml::cld(mat1_scaled, timeInData = 1:5, maxNA = 2)
+# inspect object
+class(survey_data_cld)
+# run kml with 2-6 clusters and 20 redrawings for each
+kml::kml(survey_data_cld, nbRedrawing = 20)
+# run choice
+X11(type = "Xlib")
+kml::choice(survey_data_cld)
+
+clusters <- getClusters(survey_data_cld, 6, clusterRank = 6, asInteger = FALSE)
+clusters <- as.data.frame(clusters)
+write.xlsx(clusters, ".../Clusters_RNAseq.xlsx", rowNames = T)
+
+#######Proteomics#########
+#Import data
+dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 2)
+#Make a matrix
+rownames(dat1) <- dat1$Name
+mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
+#row normalize
+mat1_scaled = t(scale(t(mat1)))
+
+# create clusterLongData object
+survey_data_cld <- kml::cld(mat1_scaled, timeInData = 1:5, maxNA = 2)
+# inspect object
+class(survey_data_cld)
+# run kml with 2-6 clusters and 20 redrawings for each
+kml::kml(survey_data_cld, nbRedrawing = 20)
+# run choice
+X11(type = "Xlib")
+kml::choice(survey_data_cld)
+
+clusters <- getClusters(survey_data_cld, 6, clusterRank = 6, asInteger = FALSE)
+clusters <- as.data.frame(clusters)
+write.xlsx(clusters, ".../Clusters_Prot.xlsx", rowNames = T)
+
+#######PhosphoProteomics#########
+#Import data
+dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 3)
+#Make a matrix
+rownames(dat1) <- dat1$Name
+mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
+#row normalize
+mat1_scaled = t(scale(t(mat1)))
+
+# create clusterLongData object
+survey_data_cld <- kml::cld(mat1_scaled, timeInData = 1:5, maxNA = 2)
+# inspect object
+class(survey_data_cld)
+# run kml with 2-6 clusters and 20 redrawings for each
+kml::kml(survey_data_cld, nbRedrawing = 20)
+# run choice
+X11(type = "Xlib")
+kml::choice(survey_data_cld)
+
+clusters <- getClusters(survey_data_cld, 6, clusterRank = 6, asInteger = FALSE)
+clusters <- as.data.frame(clusters)
+write.xlsx(clusters, ".../Clusters_PhosProt.xlsx", rowNames = T)
