@@ -9,25 +9,8 @@ library(SummarizedExperiment)
 library(BiocGenerics)
 library(ggplot2)
 
-####Step 0: Colapse rownames dataset####
-data <- read.xlsx("Raw phospho data.xlsx")
-#Subset data and only keep intensities
-data1 <- data[,grep("Intensity", colnames(data))]
-#Creating a PhosphoExperiment object
-ppe <- PhosphoExperiment(assays = list(Quantification = as.matrix(data1)))
-#Colapse row names
-mat = SummarizedExperiment::assay(ppe, "Quantification")
-rownames(mat) <- data$Row.names
-sum(duplicated(rownames(mat)))
-mat = phosCollapse(mat, rownames(mat),
-                   stat = apply(abs(mat), 1, max),
-                   by='mid')
-sum(duplicated(rownames(mat)))
-mat <- as.data.frame(mat)
-write.xlsx(mat, "Raw phospho data Colapsed.xlsx", rowNames = T)
-
 ####Step 1: Load dataset####
-data <- read.xlsx("Raw phospho data Colapsed.xlsx")
+data <- read.xlsx("Suppl. Table XXX.xlsx")
 data <- data[,c(1:10, 19:22, 31:34, 43:46, 55:58)]
 #Subset data and only keep intensities
 data1 <- data[,grep("Intensity", colnames(data))]
