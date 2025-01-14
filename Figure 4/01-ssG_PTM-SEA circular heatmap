@@ -671,3 +671,316 @@ tiff(".../Circular Heatmap_PhosProt.tiff",
 draw(lgd_list)
 
 dev.off()
+
+set.seed(123)
+library(ComplexHeatmap)
+library(circlize) 
+library(openxlsx)
+library(dendextend)
+library(gridBase)
+library(magrittr)
+
+######BT66OFF Horizontal heatmap#######
+#Import data
+#dat1 <- read.xlsx("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 4 - ssGSEA circHeatmap + RTK/Circular Heatmap BT66OFF RNAseqV2.xlsx")
+dat1 <- read.xlsx("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 4 - ssGSEA circHeatmap + RTK/BT66OFF/06-Overlap from Kmean not Mefisto/Circular Heatmap/Circular Heatmap BT66OFF all ssG-PTM-SEA results.xlsx")
+#Make a matrix
+rownames(dat1) <- dat1$Name
+mat1 <- as.matrix(dat1[,-c(1, 5:11)])
+#Calculate dendogram from Raw values
+#hc <- hclust(as.dist(1-cor(t(mat1))))
+
+#Prepare paramters for the circular heatmap
+#Color dendogram
+dend_col = structure(1:23, names = c("Cell cycle", "Cell death", "Cytokines/Inflammation", "DNA repair","DNA replication", "External stimuli", "Gene expression", "GPCR", "Growth factor/RTK", "Interferon", "Ion channels", "JNK", "MAPK", "Metabolism", "Other", "Other pathways", "p38", "PI3K/AKT/mTOR", "PMI", "Protein degradation", "Protein synthesis", "Protein transport", "Senescence"))
+#Color heatmap
+col_fun1 = colorRamp2(c(-2, 0, 2), c("#762A83", "lightgrey", "#1B7837")) #Purple/green scale
+col_fun1 = colorRamp2(c(-2, 0, 2), c("blue", "lightgrey", "red")) #Red/Blue scale
+
+function(dend, m, si) reorder(dend, rowMeans(m))
+#Color Categories
+direction1 = dat1$Category
+col_direction1 <- dat1$Category_color
+names(col_direction1) <- dat1$Category
+#Color Subcategories
+direction2 = dat1$Subcategories
+col_direction2 <- dat1$Subcategory_color
+names(col_direction2) <- dat1$Subcategories
+#Color clusters
+direction3 = dat1$clusters
+col_direction3 <- dat1$clusters_color
+names(col_direction3) <- dat1$clusters
+
+mat1 <- t(mat1)
+
+dat2 <- dat1[,c(5)]
+dat2 <- t(dat2)
+
+dat3 <- dat1[,c(7)]
+dat3 <- t(dat3)
+
+
+h1 <- Heatmap(mat1, show_row_names = FALSE,
+        show_column_names = F,
+        heatmap_legend_param = list(title = "ssGSEA z-score", 
+                                    labels_gp = gpar(fontsize = 6), 
+                                    title_gp = gpar(fontsize = 6, fontface = "bold"),
+                                    direction = "horizontal"),
+        column_split = dat1$clusters,
+        column_title = NULL,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        heatmap_width = unit(25, "cm"),
+        heatmap_height = unit(5, "cm"))
+
+unique_categories <- unique(dat2)  # Extract unique pathway names from dat2
+category_colors <- setNames(dat1$Category_color[match(unique_categories, dat1$Category)], 
+                            unique_categories)
+
+
+h2 <- Heatmap(dat2, show_row_names = FALSE,
+        show_column_names = F,
+        heatmap_legend_param = list(title = "Categories", 
+                                    labels_gp = gpar(fontsize = 6), 
+                                    title_gp = gpar(fontsize = 6, fontface = "bold"),
+                                    direction = "horizontal"),
+        col = category_colors,
+        column_split = dat1$clusters,
+        column_title = NULL,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        heatmap_width = unit(25, "cm"),
+        heatmap_height = unit(1, "cm"))
+
+
+tiff("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 4 - ssGSEA circHeatmap + RTK/BT66OFF/06-Overlap from Kmean not Mefisto/Circular Heatmap/Normal Heatmap Main categories.tiff", 
+     width = 30, height = 30, unit = "cm", res=300)
+
+ht_list = h1 %v% h2                                                           #Combine both heatmaps (main with DSS and drug annotation (ht1) + caspase-8 heatmap (ht2))                      
+draw(ht_list,                                                                   #Draw the final heatmap...
+     heatmap_legend_side = "bottom",                                              #... with legends on the left side...
+     merge_legend = TRUE) 
+
+dev.off()
+
+######Summary consistent pathways only#######
+#Import data
+dat1 <- read.xlsx(".../Suppl. Table 13.xlsx")
+#Make a matrix
+rownames(dat1) <- dat1$Name
+mat1 <- as.matrix(dat1[,-c(1, 5:10)])
+#Calculate dendogram from Raw values
+hc <- hclust(as.dist(1-cor(t(mat1))))
+
+#Prepare paramters for the circular heatmap
+#Color dendogram
+dend_col = structure(1:23, names = c("Cell cycle", "Cell death", "Cytokines/Inflammation", "DNA repair","DNA replication", "External stimuli", "Gene expression", "GPCR", "Growth factor/RTK", "Interferon", "Ion channels", "JNK", "MAPK", "Metabolism", "Other", "Other pathways", "p38", "PI3K/AKT/mTOR", "PMI", "Protein degradation", "Protein synthesis", "Protein transport", "Senescence"))
+#Color heatmap
+col_fun1 = colorRamp2(c(-2, 0, 2), c("#762A83", "lightgrey", "#1B7837")) #Purple/green scale
+col_fun1 = colorRamp2(c(-2, 0, 2), c("blue", "lightgrey", "red")) #Red/Blue scale
+
+function(dend, m, si) reorder(dend, rowMeans(m))
+#Color Categories
+direction1 = dat1$Category
+col_direction1 <- dat1$Category_color
+names(col_direction1) <- dat1$Category
+#Color Subcategories
+direction2 = dat1$Subcategories
+col_direction2 <- dat1$Subcategory_color
+names(col_direction2) <- dat1$Subcategories
+#Color clusters
+direction3 = dat1$clusters
+col_direction3 <- dat1$clusters_color
+names(col_direction3) <- dat1$clusters
+
+#Draw the circular heatmap
+circos.clear()
+  circos.par(gap.after = c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5)) #Change space between clusters +/- ",2" if Other group is in or not
+  circos.heatmap.initialize(mat1, split = dat1$Category, cluster = F) #Draw GEP heatmap
+  circos.heatmap(direction3, col = col_direction3, track.height = 0.06) #Draw Kmean cluster labels
+  circos.heatmap(mat1, col = col_fun1, track.height = 0.3,
+                            clustering.method = as.dendrogram(hc))
+  circos.heatmap(direction2, col = col_direction2, track.height = 0.08) #Draw Subcategories labels
+  circos.heatmap(direction1, col = col_direction1, track.height = 0.08) #Draw Categories labels
+  circos.clear()
+  
+#Add legends
+lgd_mat0 = Legend(title = "K-mean cluster", at = names(col_direction3[unique(dat1$clusters)]), 
+                  legend_gp = gpar(fill = col_direction3[unique(dat1$clusters)]),
+                  labels_gp = gpar(fontsize = 6),
+                  grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                  title_gp = gpar(fontsize = 7, fontface = "bold"),
+                  direction = c("horizontal"))
+
+lgd_mat1 = Legend(title = "ssGSEA z-score", col_fun = col_fun1,
+                  labels_gp = gpar(fontsize = 6),
+                  grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                  title_gp = gpar(fontsize = 7, fontface = "bold"),
+                  direction = c("horizontal"))
+lgd_direction1 = Legend(title = "Pathways", at = names(col_direction1[unique(dat1$Category)]), 
+                        legend_gp = gpar(fill = col_direction1[unique(dat1$Category)]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction2 = Legend(title = "Cell cycle", at = names(col_direction2[unique(dat1[dat1$Category == "Cell cycle","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Cell cycle","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction3 = Legend(title = "Cell death", at = names(col_direction2[unique(dat1[dat1$Category == "Cell death","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Cell death","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction4 = Legend(title = "Cytokines/Inflammation", at = names(col_direction2[unique(dat1[dat1$Category == "Cytokines/Inflammation","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Cytokines/Inflammation","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction5 = Legend(title = "DNA repair", at = names(col_direction2[unique(dat1[dat1$Category == "DNA repair","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "DNA repair","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction6 = Legend(title = "DNA replication", at = names(col_direction2[unique(dat1[dat1$Category == "DNA replication","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "DNA replication","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction7 = Legend(title = "External stimuli", at = names(col_direction2[unique(dat1[dat1$Category == "External stimuli","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "External stimuli","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction8 = Legend(title = "Gene expression", at = names(col_direction2[unique(dat1[dat1$Category == "Gene expression","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Gene expression","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction9 = Legend(title = "GPCR", at = names(col_direction2[unique(dat1[dat1$Category == "GPCR","Subcategories"])]), 
+                        legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "GPCR","Subcategories"])]),
+                        labels_gp = gpar(fontsize = 6),
+                        grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                        title_gp = gpar(fontsize = 7, fontface = "bold"),
+                        direction = c("horizontal"))
+lgd_direction10 = Legend(title = "Growth factor/RTK", at = names(col_direction2[unique(dat1[dat1$Category == "Growth factor/RTK","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Growth factor/RTK","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction11 = Legend(title = "Interferon", at = names(col_direction2[unique(dat1[dat1$Category == "Interferon","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Interferon","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction12 = Legend(title = "Ion channels", at = names(col_direction2[unique(dat1[dat1$Category == "Ion channels","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Ion channels","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction13 = Legend(title = "JNK", at = names(col_direction2[unique(dat1[dat1$Category == "JNK","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "JNK","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction14 = Legend(title = "MAPK", at = names(col_direction2[unique(dat1[dat1$Category == "MAPK","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "MAPK","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction15 = Legend(title = "Metabolism", at = names(col_direction2[unique(dat1[dat1$Category == "Metabolism","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Metabolism","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction17 = Legend(title = "Other pathways", at = names(col_direction2[unique(dat1[dat1$Category == "Other pathways","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Other pathways","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction18 = Legend(title = "p38", at = names(col_direction2[unique(dat1[dat1$Category == "p38","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "p38","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction19 = Legend(title = "PI3K/AKT/mTOR", at = names(col_direction2[unique(dat1[dat1$Category == "PI3K/AKT/mTOR","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "PI3K/AKT/mTOR","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction20 = Legend(title = "PMI", at = names(col_direction2[unique(dat1[dat1$Category == "PMI","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "PMI","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction21 = Legend(title = "Protein degradation", at = names(col_direction2[unique(dat1[dat1$Category == "Protein degradation","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Protein degradation","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction22 = Legend(title = "Protein synthesis", at = names(col_direction2[unique(dat1[dat1$Category == "Protein synthesis","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Protein synthesis","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction23 = Legend(title = "Protein transport", at = names(col_direction2[unique(dat1[dat1$Category == "Protein transport","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Protein transport","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+lgd_direction24 = Legend(title = "Senescence", at = names(col_direction2[unique(dat1[dat1$Category == "Senescence","Subcategories"])]), 
+                         legend_gp = gpar(fill = col_direction2[unique(dat1[dat1$Category == "Senescence","Subcategories"])]),
+                         labels_gp = gpar(fontsize = 6),
+                         grid_height = unit(3, "mm"), grid_width = unit(3, "mm"),
+                         title_gp = gpar(fontsize = 7, fontface = "bold"),
+                         direction = c("horizontal"))
+
+
+#circle_size = unit(1.2, "snpc")
+
+plot.new()
+circle_size = unit(1, "snpc") # snpc unit gives you a square region
+
+pushViewport(viewport(x = 0, y = 0.5, width = circle_size, height = circle_size,
+                      just = c("left", "center")))
+par(omi = gridOMI(), new = TRUE)
+circlize_plot()
+upViewport()
+
+h = dev.size()[2]
+lgd_list = packLegend(lgd_mat0,lgd_mat1, lgd_direction1, lgd_direction2,lgd_direction3,
+                      lgd_direction4,lgd_direction5,lgd_direction6,lgd_direction7,
+                      lgd_direction8,lgd_direction9,lgd_direction10,lgd_direction11,
+                      lgd_direction12,lgd_direction13,lgd_direction14,lgd_direction15,
+                      lgd_direction17,lgd_direction18,lgd_direction19,
+                      lgd_direction20,lgd_direction21,lgd_direction22,lgd_direction23,
+                      lgd_direction24, max_width = unit(1.3*h, "inch"), max_height = unit(1.5*h, "inch"),
+                      column_gap = unit(0.2, "cm"), row_gap = unit(1, "mm"), direction = "horizontal")
+
+tiff(".../Circular Heatmap_summary.tiff", 
+     width = 30, height = 30, unit = "cm", res=300)
+
+draw(lgd_list)
+
+dev.off()
