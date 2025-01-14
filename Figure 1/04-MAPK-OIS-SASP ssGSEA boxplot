@@ -1,0 +1,113 @@
+set.seed(123)
+library("ggpubr")
+library(openxlsx)
+library(tidyverse)
+
+#####RNAseq####
+dat1 <- read.xlsx("Suppl. Table 3.xlsx")
+dat1$Signature <- factor(dat1$Signature, levels=c("MAPK", "OIS", "SASP"))
+dat1$Time_point <- c(ifelse(dat$Samples == "Ctrl", "9",
+                           ifelse(dat$Samples == "0.25", "15",
+                                  ifelse(dat$Samples == "1", "16",
+                                         ifelse(dat$Samples == "6", "17", "18")))))
+dat1$Time_point <- factor(dat$Time_point, levels=c("9", "15", "16", "17", "18"), labels=c("Ctrl", "0.25", "1", "6", "24"))
+
+
+tiff(".../OIS-SASP-MPAS RNAseq.tiff", 
+     width = 10, height = 5, unit = "cm", res=300)
+
+ggplot(dat1)  + 
+  geom_boxplot(aes(x=Time_point, y=Enrichment_Scores, fill = Signature), position=position_dodge(), outlier.shape = NA)+
+  geom_dotplot(aes(x=Time_point, y=Enrichment_Scores, fill = Signature), position=position_dodge(),binaxis='y', stackdir='center', dotsize=0.5)+
+  scale_fill_brewer(palette="Greens") +
+  #scale_color_brewer(palette="Greens") +
+  geom_hline(yintercept=0, linetype="dashed", color = "black", linewidth = 0.5)+
+  #stat_summary(fun.y="mean", geom="line", aes(x=Time_point, y=Enrichment_Scores, group=Signature, color = Signature))+
+  facet_wrap(~Signature, ncol = 3)+
+  theme_bw()+
+  theme(legend.text=element_text(size= 7),
+        legend.title=element_text(size=7), 
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black"))+
+  theme(strip.text.x = element_text(size = 7))+
+  theme(axis.title.x = element_text(size = 7))+
+  theme(axis.title.y = element_text(size = 7))+
+  theme(axis.text.x = element_text(size = 7, color = "black"))+
+  theme(axis.text.y = element_text(size = 7, color = "black"))+
+  labs(y="Gene signature score \n(ssGSEA z-score)", x = "Trametinib 100nM (h)")+
+  theme(legend.position = "none")
+  
+dev.off()
+
+#####MPAS vs OIS/SASP all together BT66OFF - Proteomics####
+dat1 <- read.xlsx("Suppl. Table 3.xlsx")
+dat1$Time_point <- c(ifelse(dat$Samples == "Ctrl", "9",
+                           ifelse(dat$Samples == "0.25", "15",
+                                  ifelse(dat$Samples == "1", "16",
+                                         ifelse(dat$Samples == "6", "17", "18")))))
+dat1$Time_point <- factor(dat$Time_point, levels=c("9", "15", "16", "17", "18"), labels=c("Ctrl", "0.25", "1", "6", "24"))
+dat1$Signature <- factor(dat1$Signature, levels=c("MAPK", "OIS", "SASP"))
+
+tiff(".../OIS-SASP-MAPK Prot.tiff", 
+     width = 10, height = 5, unit = "cm", res=300)
+
+ggplot(dat1)  + 
+  geom_boxplot(aes(x=Time_point, y=Enrichment_Scores, fill = Signature), position=position_dodge(), outlier.shape = NA)+
+  geom_dotplot(aes(x=Time_point, y=Enrichment_Scores, fill = Signature), position=position_dodge(),binaxis='y', stackdir='center', dotsize=0.5)+
+  scale_fill_brewer(palette="Blues") +
+  #scale_color_brewer(palette="Greens") +
+  geom_hline(yintercept=0, linetype="dashed", color = "black", linewidth = 0.5)+
+  #stat_summary(fun.y="mean", geom="line", aes(x=Time_point, y=Enrichment_Scores, group=Signature, color = Signature))+
+  facet_wrap(~Signature, ncol = 3)+
+  theme_bw()+
+  theme(legend.text=element_text(size= 7),
+        legend.title=element_text(size=7), 
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black"))+
+  theme(strip.text.x = element_text(size = 7))+
+  theme(axis.title.x = element_text(size = 7))+
+  theme(axis.title.y = element_text(size = 7))+
+  theme(axis.text.x = element_text(size = 7, color = "black"))+
+  theme(axis.text.y = element_text(size = 7, color = "black"))+
+  labs(y="Protein signature score \n(ssGSEA z-score)", x = "Trametinib 100nM (h)")+
+  theme(legend.position = "none")
+
+dev.off()
+
+#####Phosphoprotomics####
+dat1 <- read.xlsx("Suppl. Table 3.xlsx")
+dat1$Time_point <- c(ifelse(dat$Samples == "Ctrl", "9",
+                           ifelse(dat$Samples == "0.25", "15",
+                                  ifelse(dat$Samples == "1", "16",
+                                         ifelse(dat$Samples == "6", "17", "18")))))
+dat1$Time_point <- factor(dat$Time_point, levels=c("9", "15", "16", "17", "18"), labels=c("Ctrl", "0.25", "1", "6", "24"))
+dat1$Signature <- factor(dat1$Signature, levels=c("MAPK", "OIS", "MAPK1"))
+
+tiff(".../OIS-MEK PProt.tiff", 
+     width = 10, height = 5, unit = "cm", res=300)
+
+ggplot(dat1)  + 
+  geom_boxplot(aes(x=Time_point, y=Enrichment_Scores, fill = Signature), position=position_dodge(), outlier.shape = NA)+
+  geom_dotplot(aes(x=Time_point, y=Enrichment_Scores, fill = Signature), position=position_dodge(),binaxis='y', stackdir='center', dotsize=0.5)+
+  scale_fill_brewer(palette="Reds") +
+  #scale_color_brewer(palette="Greens") +
+  geom_hline(yintercept=0, linetype="dashed", color = "black", linewidth = 0.5)+
+  #stat_summary(fun.y="mean", geom="line", aes(x=Time_point, y=Enrichment_Scores, group=Signature, color = Signature))+
+  facet_wrap(~Signature, ncol = 3)+
+  theme_bw()+
+  theme(legend.text=element_text(size= 7),
+        legend.title=element_text(size=7), 
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black"))+
+  theme(strip.text.x = element_text(size = 7))+
+  theme(axis.title.x = element_text(size = 7))+
+  theme(axis.title.y = element_text(size = 7))+
+  theme(axis.text.x = element_text(size = 7, color = "black"))+
+  theme(axis.text.y = element_text(size = 7, color = "black"))+
+  labs(y="Phosphoprotein signature score \n(ssGSEA z-score)", x = "Trametinib 100nM (h)")+
+  theme(legend.position = "none")
+
+dev.off()
