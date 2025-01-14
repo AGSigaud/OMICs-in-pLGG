@@ -1,0 +1,45 @@
+#### Libraries ####
+set.seed(123)                                                                  
+library(openxlsx)                                                              
+library(ComplexHeatmap)                                                        
+library(circlize)                                                              
+library(ggplot2)
+library(tidyverse)
+library(janitor)
+
+data1 <- read.xlsx(".../Suppl. Table 16.xlsx")             
+data1$Single.treatment <- data1$Single.treatment*100
+data1$Combo.Tram.100nM <- data1$Combo.Tram.100nM*100
+data1$Color2 <- as.character(data1$Color2)
+
+tiff(".../Results drug screen_Viability.tiff",
+     height = 6.5, width = 11, unit = "cm", res=300)
+
+ggplot(data1, aes(x = Single.treatment, y = Combo.Tram.100nM, color = Color2)) +
+  geom_abline()+
+  geom_point(size = 1) +
+  labs(x = 'Single Agent Viability\n(% viability relative to DMSO)',
+       y = 'Combination Viability\n(% viability relative to trametinib 100nM)') +
+  theme_classic() +
+  theme(axis.text = element_text(color = "black", size = 6),
+        axis.title.y = element_text(size = 6),
+        axis.title.x = element_text(size = 6),
+        axis.text.x = element_text(size = 6),
+        legend.text = element_text(size = 6),  
+        legend.title = element_text(size = 6),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(color = "black"),
+        axis.ticks = element_line(color = "black"))+
+  geom_vline(xintercept = 110, linetype="dotted", 
+             color = "black", size=0.5)+
+  geom_vline(xintercept = 75, linetype="dotted", 
+             color = "black", size=0.5)+
+  geom_hline(yintercept = 110, linetype="dotted", 
+             color = "black", size=0.5)+
+  geom_hline(yintercept = 75, linetype="dotted", 
+             color = "black", size=0.5)+
+  guides(fill = "none", color = "none")+
+  scale_x_continuous(breaks = seq(0, 120, by = 25))
+
+dev.off()
