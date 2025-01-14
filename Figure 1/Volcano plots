@@ -1,0 +1,299 @@
+library(EnhancedVolcano)
+library(openxlsx)
+library(magrittr)
+library(gridExtra)
+library(grid)
+library(ggpubr)
+
+###################
+#####RNA SEQUENCING####
+###################
+data <- as.data.frame(read.xlsx("Suppl. Table 2.xlsx")) #Remove raw 1 first
+rownames(data) <- data$Name 
+data15min <- data[,c(2:4)]
+data1h <- data[,c(5:7)]
+data6h <- data[,c(8:10)]
+data24h <- data[,c(11:13)]
+
+p1 <- EnhancedVolcano(data15min,
+                      lab = rownames(data15min),
+                      x = 'log2FoldChange',
+                      y = 'padj',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+p2 <- EnhancedVolcano(data1h,
+                      lab = rownames(data15min),
+                      x = 'log2FoldChange2',
+                      y = 'padj3',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+p3 <- EnhancedVolcano(data6h,
+                      lab = rownames(data15min),
+                      x = 'log2FoldChange4',
+                      y = 'padj5',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+p4 <- EnhancedVolcano(data24h,
+                      lab = rownames(data15min),
+                      x = 'log2FoldChange6',
+                      y = 'padj7',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+tiff(".../Volcano_BT66OFF_RNAseq.tiff", 
+     units="cm", width=11.5, height=11.5, res=300)
+#units="cm", width=15, height=8, res=300)
+
+ggarrange(p1, p2, p3, p4, ncol=2, nrow=2, common.legend = TRUE, legend="none")
+#ggarrange(p1, p2, p3, p4, ncol=4, nrow=1, common.legend = TRUE, legend="none")
+
+dev.off()
+
+###################
+#####PROTEOMICS####
+###################
+data <- as.data.frame(read.xlsx("Suppl. Table 2.xlsx"))
+rownames(data) <- data$Name 
+data15min <- data[,c(16:20)]
+data1h <- data[,c(21:25)]
+data6h <- data[,c(26:30)]
+data24h <- data[,c(31:40)]
+
+p1 <- EnhancedVolcano(data15min,
+                lab = rownames(data15min),
+                x = 'logFC',
+                y = 'adj.P.Val',
+                pCutoff = 0.05,
+                FCcutoff = 1,
+                pointSize = 1.0,
+                labSize = 2,
+                legendLabSize = 7,
+                legendIconSize = 3.0,
+                titleLabSize = 0,
+                subtitleLabSize = 0,
+                captionLabSize = 7,
+                axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,5)
+
+p2 <- EnhancedVolcano(data1h,
+                      lab = rownames(data15min),
+                      x = 'logFC2',
+                      y = 'adj.P.Val6',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,5)
+
+p3 <- EnhancedVolcano(data6h,
+                      lab = rownames(data15min),
+                      x = 'logFC8',
+                      y = 'adj.P.Val12',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,5)
+
+p4 <- EnhancedVolcano(data24h,
+                      lab = rownames(data15min),
+                      x = 'logFC14',
+                      y = 'adj.P.Val18',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,5)
+
+tiff(".../Volcano_BT66OFF_Proteo.tiff", 
+     units="cm", width=11.5, height=11.5, res=300)
+     #units="cm", width=15, height=8, res=300)
+
+ggarrange(p1, p2, p3, p4, ncol=2, nrow=2, common.legend = TRUE, legend="none")
+#ggarrange(p1, p2, p3, p4, ncol=4, nrow=1, common.legend = TRUE, legend="none")
+
+dev.off()
+
+##########################
+#####PHOSPHOPROTEOMICS####
+##########################
+data <- as.data.frame(read.xlsx("Suppl. Table 2.xlsx"))
+rownames(data) <- data$Name 
+data15min <- data[,c(38:42)]
+data1h <- data[,c(43:47)]
+data6h <- data[,c(48:52)]
+data24h <- data[,c(53:57)]
+
+p1 <- EnhancedVolcano(data15min,
+                      lab = rownames(data15min),
+                      x = 'logFC',
+                      y = 'adj.P.Val',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,10)
+
+p2 <- EnhancedVolcano(data1h,
+                      lab = rownames(data15min),
+                      x = 'logFC2',
+                      y = 'adj.P.Val6',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,10)
+
+p3 <- EnhancedVolcano(data6h,
+                      lab = rownames(data15min),
+                      x = 'logFC8',
+                      y = 'adj.P.Val12',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,10)
+
+p4 <- EnhancedVolcano(data24h,
+                      lab = rownames(data15min),
+                      x = 'logFC14',
+                      y = 'adj.P.Val18',
+                      pCutoff = 0.05,
+                      FCcutoff = 1,
+                      pointSize = 1.0,
+                      labSize = 2,
+                      legendLabSize = 7,
+                      legendIconSize = 3.0,
+                      titleLabSize = 0,
+                      subtitleLabSize = 0,
+                      captionLabSize = 7,
+                      axisLabSize = 7)+
+  ggplot2::theme(axis.line = element_line(colour = 'black', size = 0.5),
+                 axis.ticks = element_line(colour = "black", size = 0.5),
+                 axis.ticks.length = unit(.1, "cm"),
+                 panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggplot2::ylim(0,10)
+
+tiff(".../Volcano_BT66OFF_Phosphoproteo.tiff", 
+     units="cm", width=11.5, height=11.5, res=300)
+#units="cm", width=15, height=8, res=300)
+
+ggarrange(p1, p2, p3, p4, ncol=2, nrow=2, common.legend = TRUE, legend="none")
+#ggarrange(p1, p2, p3, p4, ncol=4, nrow=1, common.legend = TRUE, legend="none")
+
+dev.off()
