@@ -1,0 +1,338 @@
+set.seed(123)
+library(tidyverse) # general use
+library(ggiraph)   # interactive ggplots
+library(glue)      # pasting strings
+library(pals)      # color palette
+library(sunburstR)
+
+######UP regulated pathways#######
+#Import data
+dat1 <- read.xlsx(".../Suppl. Table 14.xlsx") #Remove first row in Excel
+data <- dat1[,c(1:11)]
+
+colors_Categories <- pals::cubicyf(n = 18) %>% 
+  set_names(unique(data[["Categories"]]))
+
+colors_Categories <- unique(data$Col_Cat) %>% 
+  set_names(unique(data[["Categories"]]))
+
+ring_outer <- data %>%
+  # join colors to data frame ----
+left_join(enframe(colors_Categories, name = "Categories", value = "color_Categories"),
+          by = "Categories") %>%
+  # arrange descending Categories but ascending title
+  # to compute title colors
+  arrange(desc(Nb.Cat), Categories, Nb.Subcat, Subcategories) %>%
+  group_by(Categories) %>%
+  mutate(# enumerate title in Categories
+    id_title = row_number(),
+    # number of titles per Categories
+    # this can vary - it does not have to be same number per category
+    num_title = max(id_title)) %>%
+  ungroup() %>%
+  mutate(
+    # degree of transparency based on number of attributes ----
+    color_trans = id_title / num_title ,
+    color_title = map2_chr(color_Categories, color_trans, ~ adjustcolor(.x, .y))
+  ) %>%
+  # this arrange specifies the ordering of the figure
+  # clockwise ---
+  # had to include job title here as health care had ties in title frequency
+  arrange(-Proportion.Cat, Categories,-Proportion.Subcat, desc(Subcategories)) %>%
+  # counter clockwise ---
+  # arrange(Proportion.Cat, Categories, Proportion.Subcat, Subcategories) %>%
+  mutate(Categories = fct_inorder(Categories),
+         Name_Unique = fct_inorder(Name_Unique)) %>%
+  group_by(Categories) %>%
+  mutate(cum_title_pct = cumsum(Proportion.Subcat)) %>%
+  ungroup() %>%
+  mutate(cum_industry_pct = cumsum(cum_title_pct),
+         cum_all = cumsum(Proportion.Subcat)) %>%
+  mutate(
+    # compute coordinates of the rectangles ----
+    # the 0.3 is an adjustment on the 0 to 100 scale to add a small
+    # amount of white space between rectangles
+    rect_x_max = cumsum(Proportion.Subcat1) - 0.3,
+    # xmax ----
+    rect_x_min = rect_x_max - Proportion.Subcat1 + 0.3,
+    # xmin ----
+    rect_x_mid = (rect_x_min + rect_x_max) / 2,
+    # xmid ----
+    # angles in case adding text to plot, not shown in figures below ----
+    angle = 90 - 360 * rect_x_mid / 100,
+    hjust = ifelse(angle < -90, 1, 0),
+    angle = ifelse(angle < -90, angle + 180, angle),
+    # label for ggiraph
+    label_title = glue::glue(
+      '{scales::percent(Proportion.Cat/100, accuracy = 1)} ({Nb.Cat}/{n_total}) {Categories}\n {scales::percent(Proportion.Subcat/100, accuracy = 1)} ({Nb.Subcat}/{n_total}) {Subcategories}'
+    )
+  )
+
+
+
+colors_title <- ring_outer[["color_title"]] %>% 
+  set_names(ring_outer[["Name_Unique"]])
+
+colors_title <- data$Col_Subcat %>% 
+  set_names(ring_outer[["Name_Unique"]])
+
+all_colors <- c(colors_Categories, colors_title)
+
+ring_inner <- ring_outer %>%
+  dplyr::select(Categories,
+                Proportion.Cat,
+                Nb.Cat,
+                n_total,
+                rect_x_max,
+                rect_x_min) %>%
+  # first, get stopping point for each rectangle from least common item ----
+arrange(Categories, desc(rect_x_max)) %>%
+  group_by(Categories) %>%
+  # keep one entry per Categories ----
+slice(1) %>%
+  ungroup() %>%
+  dplyr::select(Categories, Proportion.Cat, Nb.Cat, n_total, stop = rect_x_max) %>%
+  # second, get starting point for each rectangle from most common item ----
+left_join(
+  ring_outer %>%
+    dplyr::select(
+      Categories,
+      Proportion.Cat,
+      Nb.Cat,
+      n_total,
+      rect_x_max,
+      rect_x_min
+    ) %>%
+    arrange(Categories, rect_x_max) %>%
+    group_by(Categories) %>%
+    slice(1) %>%
+    ungroup() %>%
+    dplyr::select(Categories, Proportion.Cat, Nb.Cat, n_total, start = rect_x_min),
+  by = c("Categories", "Proportion.Cat", "Nb.Cat", "n_total")
+) %>%
+  # insert blank row for extra white space where circle starts/stops ---
+  bind_rows(tibble(
+    attr_category = NA,
+    start = 99.7,
+    stop = 100.1
+  )) %>%
+  mutate(
+    # compute midpoint for labeling if needed ----
+    mid = (stop - start) / 2 + start,
+    # a label for Categories pct ----
+    label_industry = ifelse(
+      is.na(Categories),
+      NA,
+      glue::glue(
+        '{scales::percent(Proportion.Cat/100, accuracy = 1)} ({Nb.Cat}/{n_total}) {Categories} '
+      )
+    )
+  )
+
+
+
+# outer ring for job title
+tiff(".../Sunburst graph UP.tiff", 
+     width = 20, height = 20, unit = "cm", res=300)
+
+ring_outer %>%
+  ggplot() +
+  geom_rect(
+    aes(
+      ymin = 1,
+      # variable length bars
+      ymax = Proportion.Subcat*10,
+      xmin = rect_x_min,
+      xmax = rect_x_max,
+      fill = Name_Unique
+    ),
+    show.legend = FALSE
+  ) +
+  coord_polar() +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "none",
+  ) +
+  # fiddle lower limit here to control donut size
+  ylim(-40, 100) +
+  scale_fill_manual(values = all_colors) +
+  # inner Categories ring ----
+geom_rect(data = ring_inner,
+          aes(
+            # the inner ring spans a height from 0 to -20
+            ymin = -5,
+            ymax = 0,
+            xmin = start,
+            xmax = stop,
+            fill = Categories
+          ))
+dev.off()
+
+######UP regulated pathways#######
+#Import data
+dat1 <- read.xlsx(".../Suppl. Table 14.xlsx") #Remove first row in Excel
+data <- dat1[c(1:44),c(12:22)]
+
+colors_Categories <- pals::cubicyf(n = 17) %>% 
+  set_names(unique(data[["Categories"]]))
+
+colors_Categories <- unique(data$Col_Cat) %>% 
+  set_names(unique(data[["Categories"]]))
+
+ring_outer <- data %>%
+  # join colors to data frame ----
+left_join(enframe(colors_Categories, name = "Categories", value = "color_Categories"),
+          by = "Categories") %>%
+  # arrange descending Categories but ascending title
+  # to compute title colors
+  arrange(desc(Nb.Cat), Categories, Nb.Subcat, Subcategories) %>%
+  group_by(Categories) %>%
+  mutate(# enumerate title in Categories
+    id_title = row_number(),
+    # number of titles per Categories
+    # this can vary - it does not have to be same number per category
+    num_title = max(id_title)) %>%
+  ungroup() %>%
+  mutate(
+    # degree of transparency based on number of attributes ----
+    color_trans = id_title / num_title ,
+    color_title = map2_chr(color_Categories, color_trans, ~ adjustcolor(.x, .y))
+  ) %>%
+  # this arrange specifies the ordering of the figure
+  # clockwise ---
+  # had to include job title here as health care had ties in title frequency
+  arrange(-Proportion.Cat, Categories,-Proportion.Subcat, desc(Subcategories)) %>%
+  # counter clockwise ---
+  # arrange(Proportion.Cat, Categories, Proportion.Subcat, Subcategories) %>%
+  mutate(Categories = fct_inorder(Categories),
+         Name_Unique = fct_inorder(Name_Unique)) %>%
+  group_by(Categories) %>%
+  mutate(cum_title_pct = cumsum(Proportion.Subcat)) %>%
+  ungroup() %>%
+  mutate(cum_industry_pct = cumsum(cum_title_pct),
+         cum_all = cumsum(Proportion.Subcat)) %>%
+  mutate(
+    # compute coordinates of the rectangles ----
+    # the 0.3 is an adjustment on the 0 to 100 scale to add a small
+    # amount of white space between rectangles
+    rect_x_max = cumsum(Proportion.Subcat1) - 0.3,
+    # xmax ----
+    rect_x_min = rect_x_max - Proportion.Subcat1 + 0.3,
+    # xmin ----
+    rect_x_mid = (rect_x_min + rect_x_max) / 2,
+    # xmid ----
+    # angles in case adding text to plot, not shown in figures below ----
+    angle = 90 - 360 * rect_x_mid / 100,
+    hjust = ifelse(angle < -90, 1, 0),
+    angle = ifelse(angle < -90, angle + 180, angle),
+    # label for ggiraph
+    label_title = glue::glue(
+      '{scales::percent(Proportion.Cat/100, accuracy = 1)} ({Nb.Cat}/{n_total}) {Categories}\n {scales::percent(Proportion.Subcat/100, accuracy = 1)} ({Nb.Subcat}/{n_total}) {Subcategories}'
+    )
+  )
+
+
+
+colors_title <- ring_outer[["color_title"]] %>% 
+  set_names(ring_outer[["Name_Unique"]])
+
+colors_title <- data$Col_Subcat %>% 
+  set_names(ring_outer[["Name_Unique"]])
+
+all_colors <- c(colors_Categories, colors_title)
+
+ring_inner <- ring_outer %>%
+  dplyr::select(Categories,
+                Proportion.Cat,
+                Nb.Cat,
+                n_total,
+                rect_x_max,
+                rect_x_min) %>%
+  # first, get stopping point for each rectangle from least common item ----
+arrange(Categories, desc(rect_x_max)) %>%
+  group_by(Categories) %>%
+  # keep one entry per Categories ----
+slice(1) %>%
+  ungroup() %>%
+  dplyr::select(Categories, Proportion.Cat, Nb.Cat, n_total, stop = rect_x_max) %>%
+  # second, get starting point for each rectangle from most common item ----
+left_join(
+  ring_outer %>%
+    dplyr::select(
+      Categories,
+      Proportion.Cat,
+      Nb.Cat,
+      n_total,
+      rect_x_max,
+      rect_x_min
+    ) %>%
+    arrange(Categories, rect_x_max) %>%
+    group_by(Categories) %>%
+    slice(1) %>%
+    ungroup() %>%
+    dplyr::select(Categories, Proportion.Cat, Nb.Cat, n_total, start = rect_x_min),
+  by = c("Categories", "Proportion.Cat", "Nb.Cat", "n_total")
+) %>%
+  # insert blank row for extra white space where circle starts/stops ---
+  bind_rows(tibble(
+    attr_category = NA,
+    start = 99.7,
+    stop = 100.1
+  )) %>%
+  mutate(
+    # compute midpoint for labeling if needed ----
+    mid = (stop - start) / 2 + start,
+    # a label for Categories pct ----
+    label_industry = ifelse(
+      is.na(Categories),
+      NA,
+      glue::glue(
+        '{scales::percent(Proportion.Cat/100, accuracy = 1)} ({Nb.Cat}/{n_total}) {Categories} '
+      )
+    )
+  )
+
+
+
+# outer ring for job title
+tiff(".../Sunburst graph DN.tiff", 
+     width = 20, height = 20, unit = "cm", res=300)
+
+ring_outer %>%
+  ggplot() +
+  geom_rect(
+    aes(
+      ymin = 1,
+      # variable length bars
+      ymax = Proportion.Subcat*10,
+      xmin = rect_x_min,
+      xmax = rect_x_max,
+      fill = Name_Unique
+    ),
+    show.legend = FALSE
+  ) +
+  coord_polar() +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "none",
+  ) +
+  # fiddle lower limit here to control donut size
+  ylim(-40, 100) +
+  scale_fill_manual(values = all_colors) +
+  # inner Categories ring ----
+geom_rect(data = ring_inner,
+          aes(
+            # the inner ring spans a height from 0 to -20
+            ymin = -5,
+            ymax = 0,
+            xmin = start,
+            xmax = stop,
+            fill = Categories
+          ))
+dev.off()
