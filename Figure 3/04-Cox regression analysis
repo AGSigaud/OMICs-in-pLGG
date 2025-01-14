@@ -1,0 +1,92 @@
+set.seed(123)
+library(openxlsx)
+library("survival")
+library("survminer")
+library(tidyverse)
+library("RColorBrewer")
+library(grid)
+library(forestploter)
+
+###Univariate Cox regression analysis####
+data <- openxlsx::read.xlsx(".../Suppl. Table 14.xlsx")
+
+res.cox <- coxph(Surv(PFS, Recurrence) ~ Alt_Broad, data = data)
+res.cox
+
+covariates <- c("OIS_UP_RNAseq_Only", "Location_Group", "Resection_Group",  "MAPK_Group", "Sex_Group", "Age")
+univ_formulas <- sapply(covariates,
+                        function(x) as.formula(paste('Surv(PFS, Recurrence)~', x)))
+
+univ_models <- lapply( univ_formulas, function(x){coxph(x, data = data)})
+# Extract data 
+univ_results <- lapply(univ_models,
+                       function(x){ 
+                         x <- summary(x)
+                         p.value<-signif(x$wald["pvalue"], digits=2)
+                         wald.test<-signif(x$wald["test"], digits=2)
+                         beta<-signif(x$coef[1], digits=2);#coeficient beta
+                         HR <-signif(x$coef[2], digits=2);#exp(beta)
+                         HR.confint.lower <- signif(x$conf.int[,"lower .95"], 2)
+                         HR.confint.upper <- signif(x$conf.int[,"upper .95"],2)
+                         HR <- paste0(HR, " (", 
+                                      HR.confint.lower, "-", HR.confint.upper, ")")
+                         res<-c(beta, HR, wald.test, p.value)
+                         names(res)<-c("beta", "HR (95% CI for HR)", "wald.test", 
+                                       "p.value")
+                         return(res)
+                         #return(exp(cbind(coef(x),confint(x))))
+                       })
+res <- t(as.data.frame(univ_results, check.names = FALSE))
+as.data.frame(res)
+
+tiff(".../UNIVARIATE Summary Cox Reg.tiff",
+     width = 8, height = 4, unit = "cm", res=300)
+
+ggplot(data=res, aes(x=Predictors, y=`exp(coef)`, ymin=`lower0.95`, ymax=`upper0.95`)) +
+  geom_pointrange(size = 0.2) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("Risk factors") + ylab("HR (95% CI)") +
+  theme_bw()+  # use a white background
+  theme(text=element_text(size=6, color = "black"),
+        axis.text.x = element_text(colour = "Black"),
+        axis.text.y = element_text(colour = "Black"),
+        legend.position = "none")+
+  scale_x_discrete(labels=c("Age at diagnosis" = "Age at diagnosis\n[increasing age]",               
+                            "Molecular alteration" = "Molecular alteration\n[BRAF fusion]",
+                            "OIS_UP signature" = "OIS_UP\n[Low score]",
+                            "Sex" = "Sex\n[female]",
+                            "Tumor location" = "Tumor location\n[Cerebellum]",
+                            "Resection (MRI)" = "Resection (MRI)\n[GTR]",
+                            "Immune phenotype" = "Immune phenotype\n[High]"))
+
+dev.off()
+
+###Multivariate Cox regression analysis####
+data <- openxlsx::read.xlsx(".../Suppl. Table 14.xlsx")
+
+res.cox <- coxph(Surv(PFS, Recurrence) ~ OIS_UP_RNAseq_Only + Location_Group + Resection_Group +  MAPK_Group + Sex_Group + Age, data =  data)
+summary(res.cox)
+
+
+tiff("C:/Users/romai/Desktop/Summary Cox Reg_Percents_3 groups_VF2_all features.tiff",
+     width = 8, height = 4, unit = "cm", res=300)
+ggplot(data=res.cox, aes(x=Predictors, y=`exp(coef)`, ymin=`lower0.95`, ymax=`upper0.95`)) +
+  geom_pointrange(size = 0.2) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("Risk factors") + ylab("HR (95% CI)") +
+  theme_bw()+  # use a white background
+  theme(text=element_text(size=6, color = "black"),
+        axis.text.x = element_text(colour = "Black"),
+        axis.text.y = element_text(colour = "Black"),
+        legend.position = "none")+
+  scale_x_discrete(labels=c("Age at diagnosis" = "Age at diagnosis\n[increasing age]",               
+                            "Molecular alteration" = "Molecular alteration\n[BRAF fusion]",
+                            "OIS_UP signature" = "OIS_UP\n[Low score]",
+                            "Sex" = "Sex\n[female]",
+                            "Tumor location" = "Tumor location\n[Cerebellum]",
+                            "Resection (MRI)" = "Resection (MRI)\n[GTR]",
+                            "Immune phenotype" = "Immune phenotype\n[High]"))
+
+dev.off()
