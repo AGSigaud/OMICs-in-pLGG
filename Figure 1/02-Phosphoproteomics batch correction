@@ -1,0 +1,294 @@
+####START####
+setwd("...")
+library(PhosR)
+library(openxlsx)
+library(limma)
+library(pcaMethods)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(BiocGenerics)
+library(ggplot2)
+
+####Step 0: Colapse rownames dataset####
+data <- read.xlsx("Raw phospho data.xlsx")
+#Subset data and only keep intensities
+data1 <- data[,grep("Intensity", colnames(data))]
+#Creating a PhosphoExperiment object
+ppe <- PhosphoExperiment(assays = list(Quantification = as.matrix(data1)))
+#Colapse row names
+mat = SummarizedExperiment::assay(ppe, "Quantification")
+rownames(mat) <- data$Row.names
+sum(duplicated(rownames(mat)))
+mat = phosCollapse(mat, rownames(mat),
+                   stat = apply(abs(mat), 1, max),
+                   by='mid')
+sum(duplicated(rownames(mat)))
+mat <- as.data.frame(mat)
+write.xlsx(mat, "Raw phospho data Colapsed.xlsx", rowNames = T)
+
+####Step 1: Load dataset####
+data <- read.xlsx("Raw phospho data Colapsed.xlsx")
+data <- data[,c(1:10, 19:22, 31:34, 43:46, 55:58)]
+#Subset data and only keep intensities
+data1 <- data[,grep("Intensity", colnames(data))]
+rownames(data1) <- data$Row.names
+
+####Step 2: Creating a PhosphoExperiment object####
+ppe <- PhosphoExperiment(assays = list(Quantification = as.matrix(data1)))
+#Add site annotations
+GeneSymbol <- toupper(sapply(strsplit(as.character(data[,"Gene.names"]), ";"), function(x){x[1]}))
+Residue <- as.character(data[,"Amino.acid"])
+Site <- as.numeric(data[,"Position"])
+Sequence <- sapply(strsplit(as.character(data[,"Sequence.window"]), ";"), function(x){x[1]})
+#Add these annotations to respective ppe slots
+ppe@GeneSymbol <- GeneSymbol
+ppe@Residue <- Residue
+ppe@Site <- Site
+ppe@Sequence <- Sequence
+#Add colData information
+sample_name <- strsplit(gsub("\\Intensity.", "", colnames(ppe)), "_")
+df <- S4Vectors::DataFrame(
+  cellline = sapply(sample_name, "[[", 1),
+  condition = sapply(sample_name, "[[", 2),
+  replicate = sapply(sample_name, "[[", 3)
+)
+rownames(df) <- colnames(ppe)
+SummarizedExperiment::colData(ppe) <- df
+
+####Step 3: Data pre-processing and differential phosphosite identification####
+#Log2 transformation of the data
+logmat <- log2(SummarizedExperiment::assay(ppe, "Quantification"))
+# mark any missing values as NA
+logmat[is.infinite(logmat)] <- NA
+SummarizedExperiment::assay(ppe, "Quantification") <- logmat
+#Extract the grouping information for cell type and condition
+grps <- paste0(SummarizedExperiment::colData(ppe)$cellline, "_", SummarizedExperiment::colData(ppe)$condition)
+#Filter for sites with at least 50% quantification rate (q ≥ 0.5) in one or more conditions
+ppe <- selectGrps(ppe, grps, 0.5, n=1)
+#Check the filtering results
+dim(ppe)
+#Imputation. Here, for each phosphosite in each condition, we impute its missing values in that condition (if any) using site- and condition-specific imputation if the quantification rate within that condition is equal to or greater than a desired percentage (such as ≥ 50% in the example below).
+set.seed(123)
+ppe <- scImpute(ppe, 0.5, grps)
+ppe
+#Impute the remaining sites using tail-based imputation
+ppe <- tImpute(ppe, assay = "imputed")
+#Centering data across their median
+ppe <- medianScaling(ppe, scale = FALSE, assay = "imputed")
+ppe
+#Limma package for calling for differentially phosphorylated sites between control and insulin-simulated conditions in the two cell types.
+design <- model.matrix(~ grps - 1)
+fit <- lmFit(ppe@assays@data$scaled, design)
+contrast.matrix <- makeContrasts(grpsBT66OFF_Tram15min-grpsBT66OFF_Control, 
+                                 grpsBT66OFF_Tram1h-grpsBT66OFF_Control,
+                                 grpsBT66OFF_Tram6h-grpsBT66OFF_Control,
+                                 grpsBT66OFF_Tram24h-grpsBT66OFF_Control,
+                                 levels=design)
+
+fit2 <- contrasts.fit(fit, contrast.matrix)
+fit2 <- eBayes(fit2)
+#Visualize differentially phosphorylated sites using a volcano plot (Figure 1).
+par(mfrow=c(2,2))
+#BT66OFF Tram15min
+BT66OFF15min.DE <- topTable(fit2, coef="grpsBT66OFF_Tram15min - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF15min.DE[,"logFC"], -log10(BT66OFF15min.DE[,"adj.P.Val"]), main="BT66OFF_Tram15min", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF15min.DE[,"adj.P.Val"] < 0.05 & BT66OFF15min.DE[,"logFC"] > 0)
+points(BT66OFF15min.DE[sel,"logFC"], -log10(BT66OFF15min.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF15min.DE[,"adj.P.Val"] < 0.05 & BT66OFF15min.DE[,"logFC"] < 0)
+points(BT66OFF15min.DE[sel,"logFC"], -log10(BT66OFF15min.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#BT66OFF Tram1h
+BT66OFF1h.DE <- topTable(fit2, coef="grpsBT66OFF_Tram1h - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF1h.DE[,"logFC"], -log10(BT66OFF1h.DE[,"adj.P.Val"]), main="BT66OFF_Tram1h", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF1h.DE[,"adj.P.Val"] < 0.05 & BT66OFF1h.DE[,"logFC"] > 0)
+points(BT66OFF1h.DE[sel,"logFC"], -log10(BT66OFF1h.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF1h.DE[,"adj.P.Val"] < 0.05 & BT66OFF1h.DE[,"logFC"] < 0)
+points(BT66OFF1h.DE[sel,"logFC"], -log10(BT66OFF1h.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#BT66OFF Tram6h
+BT66OFF6h.DE <- topTable(fit2, coef="grpsBT66OFF_Tram6h - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF6h.DE[,"logFC"], -log10(BT66OFF6h.DE[,"adj.P.Val"]), main="BT66OFF_Tram6h", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF6h.DE[,"adj.P.Val"] < 0.05 & BT66OFF6h.DE[,"logFC"] > 0)
+points(BT66OFF6h.DE[sel,"logFC"], -log10(BT66OFF6h.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF6h.DE[,"adj.P.Val"] < 0.05 & BT66OFF6h.DE[,"logFC"] < 0)
+points(BT66OFF6h.DE[sel,"logFC"], -log10(BT66OFF6h.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#BT66OFF Tram24h
+BT66OFF24h.DE <- topTable(fit2, coef="grpsBT66OFF_Tram24h - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF24h.DE[,"logFC"], -log10(BT66OFF24h.DE[,"adj.P.Val"]), main="BT66OFF_Tram24h", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF24h.DE[,"adj.P.Val"] < 0.05 & BT66OFF24h.DE[,"logFC"] > 0)
+points(BT66OFF24h.DE[sel,"logFC"], -log10(BT66OFF24h.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF24h.DE[,"adj.P.Val"] < 0.05 & BT66OFF24h.DE[,"logFC"] < 0)
+points(BT66OFF24h.DE[sel,"logFC"], -log10(BT66OFF24h.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#Calculate the ratio of each value against the mean phosphosite values of the control samples. The ratios were calculated independently for each of the two cell lines (Figure 2).
+BT66OFF.ratio <- SummarizedExperiment::assay(ppe, "scaled")[, grep("BT66OFF_", colnames(ppe))] -
+  rowMeans(SummarizedExperiment::assay(ppe, "scaled")[,grep("BT66OFF_Control", colnames(ppe))])
+
+SummarizedExperiment::assay(ppe, "ratio", withDimnames=FALSE)<- cbind(BT66OFF.ratio)
+par(mfrow=c(1,2))
+boxplot(ppe@assays@data$scaled, 
+        ylab="Log2 LFQ", 
+        main="Normalized LFQ data", 
+        las=2, 
+        col=factor(rep(1:5, each=4)), 
+        mar = c(12, 5, 4, 2)+ 0.1,
+        names = c("BT66OFF_Ctrl_Rep1","BT66OFF_Ctrl_Rep2","BT66OFF_Ctrl_Rep3","BT66OFF_Ctrl_Rep4",
+                  "BT66OFF_15min_Rep1","BT66OFF_15min_Rep2","BT66OFF_15min_Rep3","BT66OFF_15min_Rep4",
+                  "BT66OFF_1h_Rep1","BT66OFF_1h_Rep2","BT66OFF_1h_Rep3","BT66OFF_1h_Rep4",
+                  "BT66OFF_6h_Rep1","BT66OFF_6h_Rep2","BT66OFF_6h_Rep3","BT66OFF_6h_Rep4",
+                  "BT66OFF_24h_Rep1","BT66OFF_24h_Rep2","BT66OFF_24h_Rep3","BT66OFF_24h_Rep4"))
+boxplot(ppe@assays@data$ratio, 
+        ylab="Log2 Fold Change", 
+        main="Ratio data", 
+        las=2, 
+        col=factor(rep(1:5, each=4)), 
+        mar = c(12, 5, 4, 2)+ 0.1,
+        names = c("BT66OFF_Ctrl_Rep1","BT66OFF_Ctrl_Rep2","BT66OFF_Ctrl_Rep3","BT66OFF_Ctrl_Rep4",
+                  "BT66OFF_15min_Rep1","BT66OFF_15min_Rep2","BT66OFF_15min_Rep3","BT66OFF_15min_Rep4",
+                  "BT66OFF_1h_Rep1","BT66OFF_1h_Rep2","BT66OFF_1h_Rep3","BT66OFF_1h_Rep4",
+                  "BT66OFF_6h_Rep1","BT66OFF_6h_Rep2","BT66OFF_6h_Rep3","BT66OFF_6h_Rep4",
+                  "BT66OFF_24h_Rep1","BT66OFF_24h_Rep2","BT66OFF_24h_Rep3","BT66OFF_24h_Rep4"))
+#Save this processed ppe object for later use
+Phosphoproteomics_processed<- ppe
+save(Phosphoproteomics_processed, file = "Phosphoproteomics_processed_BT66OFF.RData")
+
+####Step 4: Identifying stably phosphorylated sites####
+#Load and set up datasets
+load("PhosR_STAR_Protocols-main/Data/PXD010621_ppe_ESC.RData", verbose = TRUE)
+load("PhosR_STAR_Protocols-main/Data/PXD003631_ppe_adipocyte.RData", verbose = TRUE)
+load("PhosR_STAR_Protocols-main/Data/phospho_ppe_adipocyte.RData", verbose = TRUE)
+#Simplify names of datasets
+ppe1 <- PXD010621_ppe_ESC
+ppe2 <- PXD003631_ppe_adipocyte
+ppe3 <- phospho_ppe_adipocyte
+#Make a list of all PhosphoExperiment objects
+ppe.list <- list(ppe1, ppe2, ppe3)
+#Make a list of grouping information of each dataset
+cond.list <- list(
+  grp1 = gsub("_.+", "", colnames(ppe1)),
+  grp2 = gsub("_r[0-9]", "", colnames(ppe2)),
+  grp3 = colnames(ppe3))
+#Identify SPSs by calling getSPS(), generate a vector of the selected assays in each of the PhosphoExperiment objects
+assays <- "Quantification"
+inhouse_SPSs <- getSPS(phosData = ppe.list,
+                       assays = assays,
+                       conds = cond.list, num = 100)
+#Diagnosing batch effect
+#Hierarchical clustering
+plotQC(SummarizedExperiment::assay(ppe, "Quantification"), panel = "dendrogram",
+       grps = SummarizedExperiment::colData(ppe)$condition,
+       labels = colnames(ppe)) + ggplot2::ggtitle("before batch correction")
+#PCA plot
+plotQC(SummarizedExperiment::assay(ppe, "Quantification"), panel = "pca",
+       grps = SummarizedExperiment::colData(ppe)$condition,
+       labels = colnames(ppe)) + ggplot2::ggtitle("before batch correction")
+#Correcting batch effect
+#Construct a design matrix by condition
+design <- model.matrix(~ SummarizedExperiment::colData(ppe)$condition - 1)
+head(design) # observe first 6 rows of the design matrix
+#Define negative controls sites
+#Given that the rownames of a matrix ppe is in a format 'GENESYMBOL;RESIDUE;SITE;'
+sites <- paste(
+  sapply(ppe@GeneSymbol, function(x)x),
+  ";",
+  sapply(ppe@Residue, function(x)x),
+  sapply(ppe@Site, function(x)x),
+  ";",
+  sep = "")
+
+#data(SPSs)
+ctl <- which(sites %in% inhouse_SPSs)
+#Run RUVphospho
+ppe <- RUVphospho(ppe, M = design, k = 3, ctl = ctl, keepImpute = T)
+#Quality control to assess the removal of batch effect
+#Hierarchical clustering plot before and after batch correction
+p1 <- plotQC(SummarizedExperiment::assay(ppe,"Quantification"),
+             grps= SummarizedExperiment::colData(ppe)$condition,
+             labels = colnames(ppe),
+             panel = "dendrogram")
+p2 <- plotQC(SummarizedExperiment::assay(ppe,"normalised"),
+             grps= SummarizedExperiment::colData(ppe)$condition,
+             labels = colnames(ppe),
+             panel="dendrogram")
+
+ggpubr::ggarrange(p1, p2, nrow = 1)
+#PCA plot before and after batch correction
+p1 <- plotQC(SummarizedExperiment::assay(ppe,"Quantification"),
+             grps= SummarizedExperiment::colData(ppe)$condition,
+             labels = colnames(ppe),
+             panel = "pca")
+
+p2 <- plotQC(SummarizedExperiment::assay(ppe,"normalised"),
+             grps= SummarizedExperiment::colData(ppe)$condition,
+             labels = colnames(ppe),
+             panel="pca")
+
+ggpubr::ggarrange(p1, p2, nrow = 1)
+
+phosphoNormMat = SummarizedExperiment::assay(ppe, "normalised")
+phosphoNormMat <- as.data.frame(phosphoNormMat)
+write.xlsx(phosphoNormMat, "BT66OFF_Phosphoprot_BatchNorm.xlsx", rowNames = T)
+
+#Get ratio norm to Ctrl mean
+BT66OFF.ratio.batchcorr <- SummarizedExperiment::assay(ppe, "normalised")[, grep("BT66OFF_", colnames(ppe))] -
+  rowMeans(SummarizedExperiment::assay(ppe, "normalised")[,grep("BT66OFF_Control", colnames(ppe))])
+BT66OFF.ratio.batchcorr <- as.data.frame(BT66OFF.ratio.batchcorr)
+write.xlsx(BT66OFF.ratio.batchcorr, "BT66OFF_Phosphoprot_BatchNorm_Ratio to Ctrl mean.xlsx", rowNames = T)
+
+#Save the final processed data for future use
+PhosphoproteomicsBtachCorr = ppe
+save(PhosphoproteomicsBtachCorr,
+     file = "PhosphoproteomicsBtachCorr_BT66OFF.RData")
+
+####Step5 get FC and pval from imputed batch corrected data
+#Limma package for calling for differentially phosphorylated sites between control and insulin-simulated conditions in the two cell types.
+design2 <- model.matrix(~ grps - 1)
+fit3 <- lmFit(ppe@assays@data$normalised, design2)
+contrast.matrix <- makeContrasts(grpsBT66OFF_Tram15min-grpsBT66OFF_Control, 
+                                 grpsBT66OFF_Tram1h-grpsBT66OFF_Control,
+                                 grpsBT66OFF_Tram6h-grpsBT66OFF_Control,
+                                 grpsBT66OFF_Tram24h-grpsBT66OFF_Control,
+                                 levels=design2)
+
+fit4 <- contrasts.fit(fit3, contrast.matrix)
+fit4 <- eBayes(fit4)
+BT66OFF15min.DE.Batch <- topTable(fit4, coef="grpsBT66OFF_Tram15min - grpsBT66OFF_Control", number = Inf)
+BT66OFF1h.DE.Batch <- topTable(fit4, coef="grpsBT66OFF_Tram1h - grpsBT66OFF_Control", number = Inf)
+BT66OFF6h.DE.Batch <- topTable(fit4, coef="grpsBT66OFF_Tram6h - grpsBT66OFF_Control", number = Inf)
+BT66OFF24h.DE.Batch <- topTable(fit4, coef="grpsBT66OFF_Tram24h - grpsBT66OFF_Control", number = Inf)
+Output <- cbind(BT66OFF15min.DE.Batch, BT66OFF1h.DE.Batch, BT66OFF6h.DE.Batch, BT66OFF24h.DE.Batch)
+write.xlsx(Output, "BT66OFF_FC-pVal_BatchCorr.xlsx", rowNames = T)
+
+par(mfrow=c(2,2))
+#BT66OFF Tram15min
+BT66OFF15min.DE <- topTable(fit4, coef="grpsBT66OFF_Tram15min - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF15min.DE[,"logFC"], -log10(BT66OFF15min.DE[,"adj.P.Val"]), main="BT66OFF_Tram15min", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF15min.DE[,"adj.P.Val"] < 0.05 & BT66OFF15min.DE[,"logFC"] > 1)
+points(BT66OFF15min.DE[sel,"logFC"], -log10(BT66OFF15min.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF15min.DE[,"adj.P.Val"] < 0.05 & BT66OFF15min.DE[,"logFC"] < -1)
+points(BT66OFF15min.DE[sel,"logFC"], -log10(BT66OFF15min.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#BT66OFF Tram1h
+BT66OFF1h.DE <- topTable(fit4, coef="grpsBT66OFF_Tram1h - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF1h.DE[,"logFC"], -log10(BT66OFF1h.DE[,"adj.P.Val"]), main="BT66OFF_Tram1h", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF1h.DE[,"adj.P.Val"] < 0.05 & BT66OFF1h.DE[,"logFC"] > 1)
+points(BT66OFF1h.DE[sel,"logFC"], -log10(BT66OFF1h.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF1h.DE[,"adj.P.Val"] < 0.05 & BT66OFF1h.DE[,"logFC"] < -1)
+points(BT66OFF1h.DE[sel,"logFC"], -log10(BT66OFF1h.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#BT66OFF Tram6h
+BT66OFF6h.DE <- topTable(fit4, coef="grpsBT66OFF_Tram6h - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF6h.DE[,"logFC"], -log10(BT66OFF6h.DE[,"adj.P.Val"]), main="BT66OFF_Tram6h", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF6h.DE[,"adj.P.Val"] < 0.05 & BT66OFF6h.DE[,"logFC"] > 1)
+points(BT66OFF6h.DE[sel,"logFC"], -log10(BT66OFF6h.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF6h.DE[,"adj.P.Val"] < 0.05 & BT66OFF6h.DE[,"logFC"] < -1)
+points(BT66OFF6h.DE[sel,"logFC"], -log10(BT66OFF6h.DE[sel,"adj.P.Val"]), pch=16, col="blue")
+
+#BT66OFF Tram24h
+BT66OFF24h.DE <- topTable(fit4, coef="grpsBT66OFF_Tram24h - grpsBT66OFF_Control", number = Inf)
+plot(BT66OFF24h.DE[,"logFC"], -log10(BT66OFF24h.DE[,"adj.P.Val"]), main="BT66OFF_Tram24h", xlab="Log2 FC", ylab="-Log10(Adjust P)")
+sel <- which(BT66OFF24h.DE[,"adj.P.Val"] < 0.05 & BT66OFF24h.DE[,"logFC"] > 1)
+points(BT66OFF24h.DE[sel,"logFC"], -log10(BT66OFF24h.DE[sel,"adj.P.Val"]), pch=16, col="red")
+sel <- which(BT66OFF24h.DE[,"adj.P.Val"] < 0.05 & BT66OFF24h.DE[,"logFC"] < -1)
+points(BT66OFF24h.DE[sel,"logFC"], -log10(BT66OFF24h.DE[sel,"adj.P.Val"]), pch=16, col="blue")
