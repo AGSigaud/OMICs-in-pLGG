@@ -1,0 +1,266 @@
+#### Libraries ####
+set.seed(123)                                                                    
+library(openxlsx)                                                                
+library(ggplot2) 
+library("ggpubr")
+library(dplyr)
+library(tidyverse)
+
+###########################                                                                            
+#### Import data table ####
+###########################
+dat <- openxlsx::read.xlsx(".../Suppl. Table 9.xlsx")   
+
+###################################
+#### OIS_PhosProt_UP ####
+###################################
+dat1 <- dat[,c(1:5)]
+dat1 <- drop_na(dat1)
+dat2 <- dat[,c(1:5,8)]
+dat2 <- drop_na(dat2)
+dat3 <- dat1 %>% filter(Broad_entity == "pLGG")
+dat4 <- dat2 %>% filter(Broad_entity == "pLGG")
+###Boxplot by broad entities####
+pdat_summary <- summarySE(dat1, measurevar = "OIS_PhosProt_UP", groupvars = "Broad_entity") 
+dat1$Broad_entity_NEW<- factor(dat1$Broad_entity, levels=c(pdat_summary[order(pdat_summary$median),"Broad_entity"]))
+
+median_dataset <- median(dat1$OIS_PhosProt_UP)
+median_pLGG <- median(dat3$OIS_PhosProt_UP)
+
+for (i in unique(dat1$Broad_entity_NEW)) {
+  dat1[dat1$Broad_entity_NEW == i, "color"] <- ifelse(median(dat1[dat1$Broad_entity_NEW == i, "OIS_PhosProt_UP"]) < median_dataset, 0,1)
+}
+
+tiff(".../OIS_PhosProt_UP.tiff", 
+     width = 8, height = 7, unit = "cm", res=300)
+ggplot(data = dat1, aes(x = Broad_entity_NEW, y = OIS_PhosProt_UP, fill = as.factor(color)))+  
+  geom_hline(yintercept= median_dataset, linetype="dashed", color = "black", size=0.5)+
+  geom_hline(yintercept= median_pLGG, linetype="dashed", color = "orange", size=0.5)+
+  stat_boxplot(geom = "errorbar", width = 0.2)+
+  geom_boxplot(outlier.shape = NA, aes(x = Broad_entity_NEW, y = OIS_PhosProt_UP))+
+  geom_boxplot(outlier.shape = NA, data=dat1[dat1$Broad_entity_NEW=="pLGG",],
+               aes(x = Broad_entity_NEW, y = OIS_PhosProt_UP),fill="orange")+                                             
+  geom_jitter(position = position_jitter(width = 0.2), color = "grey", size = 0.1)+         
+  labs(y= "OIS_UP_PhosProt (Arbitrary unit)", x = NULL)+
+  scale_fill_manual(values = c("white", "white"))+
+  scale_x_discrete(labels=c("Medulloblastoma" = "Medulloblastoma\n(n=22)",               
+                            "Ependymoma" = "Ependymoma\n(n=32)",
+                            "pHGG" = "pHGG\n(n=25)",
+                            "ATRT" = "ATRT\n(n=12)",
+                            "pLGG" = "pLGG\n(n=110)",
+                            "Craniopharyngioma" = "Craniopharyngioma\n(n=16)"))+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45,vjust = 01, hjust=1, size = 6),
+        axis.text.y = element_text(size = 6),
+        axis.title.y = element_text(size = 6))+
+  guides(fill = "none")
+dev.off()
+
+aov_pdat <- aov(OIS_PhosProt_UP~Broad_entity_NEW, dat1) 
+summary(aov_pdat)
+Stat_summary<-TukeyHSD(aov_pdat)
+Stat_summary2 <-as.data.frame(Stat_summary[[1]])
+Stat_summary2[Stat_summary2$'p adj'<0.05, ]
+
+
+####Correlation with MPAS####
+ggscatter(dat2, x = "OIS_PhosProt_UP", y = "MPAS", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef.label.y = c(4),
+          #col = "MAPK_alt_status",
+          ggtheme = theme_pubr(base_size = 10, legend = c('bottom')),
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "OIS_PhosProt_UP score", ylab = "MPAS ssGSEA score")
+  #stat_cor(aes(color = "MAPK_alt_status"))
+
+ggscatter(dat4, x = "OIS_PhosProt_UP", y = "MPAS", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef.label.y = c(4),
+          #col = "MAPK_alt_status",
+          ggtheme = theme_pubr(base_size = 10, legend = c('bottom')),
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "OIS_PhosProt_UP score", ylab = "MPAS ssGSEA score")
+#stat_cor(aes(color = "MAPK_alt_status"))
+
+###################################
+#### OIS_Prot_UP ####
+###################################
+dat1 <- dat[,c(1:4,6)]
+dat1 <- drop_na(dat1)
+dat2 <- dat[,c(1:4,6,8)]
+dat2 <- drop_na(dat2)
+dat3 <- dat1 %>% filter(Broad_entity == "pLGG")
+dat4 <- dat2 %>% filter(Broad_entity == "pLGG")
+
+###Boxplot by broad entities####
+pdat_summary <- summarySE(dat1, measurevar = "OIS_Prot_UP", groupvars = "Broad_entity") 
+dat1$Broad_entity_NEW<- factor(dat1$Broad_entity, levels=c(pdat_summary[order(pdat_summary$median),"Broad_entity"]))
+
+median_dataset <- median(dat1$OIS_Prot_UP)
+median_pLGG <- median(dat3$OIS_Prot_UP)
+
+for (i in unique(dat1$Broad_entity_NEW)) {
+  dat1[dat1$Broad_entity_NEW == i, "color"] <- ifelse(median(dat1[dat1$Broad_entity_NEW == i, "OIS_Prot_UP"]) < median_dataset, 0,1)
+}
+
+tiff("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-BT66OFF refined OIS-SASP signatures validation in patients/Petralia (z-scores)/OIS_Prot_UP.tiff", 
+     width = 8, height = 7, unit = "cm", res=300)
+ggplot(data = dat1, aes(x = Broad_entity_NEW, y = OIS_Prot_UP, fill = as.factor(color)))+  
+  geom_hline(yintercept= median_dataset, linetype="dashed", color = "black", size=0.5)+
+  geom_hline(yintercept= median_pLGG, linetype="dashed", color = "orange", size=0.5)+
+  stat_boxplot(geom = "errorbar", width = 0.2)+
+  geom_boxplot(outlier.shape = NA, aes(x = Broad_entity_NEW, y = OIS_Prot_UP))+
+  geom_boxplot(outlier.shape = NA, data=dat1[dat1$Broad_entity_NEW=="pLGG",],
+               aes(x = Broad_entity_NEW, y = OIS_Prot_UP),fill="orange")+                                             
+  geom_jitter(position = position_jitter(width = 0.2), color = "grey", size = 0.1)+         
+  labs(y= "OIS_UP_Prot (Arbitrary unit)", x = NULL)+
+  scale_fill_manual(values = c("white", "white"))+
+  scale_x_discrete(labels=c("Medulloblastoma" = "Medulloblastoma\n(n=22)",               
+                            "Ependymoma" = "Ependymoma\n(n=32)",
+                            "pHGG" = "pHGG\n(n=25)",
+                            "ATRT" = "ATRT\n(n=12)",
+                            "pLGG" = "pLGG\n(n=110)",
+                            "Craniopharyngioma" = "Craniopharyngioma\n(n=16)"))+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45,vjust = 01, hjust=1, size = 6),
+        axis.text.y = element_text(size = 6),
+        axis.title.y = element_text(size = 6))+
+  guides(fill = "none")
+dev.off()
+
+aov_pdat <- aov(OIS_Prot_UP~Broad_entity_NEW, dat1) 
+summary(aov_pdat)
+Stat_summary<-TukeyHSD(aov_pdat)
+Stat_summary2 <-as.data.frame(Stat_summary[[1]])
+Stat_summary2[Stat_summary2$'p adj'<0.05, ]
+
+
+####Correlation with MPAS####
+ggscatter(dat2, x = "OIS_Prot_UP", y = "MPAS", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef.label.y = c(4),
+          #col = "MAPK_alt_status",
+          ggtheme = theme_pubr(base_size = 10, legend = c('bottom')),
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "SASP ssGSEA score", ylab = "MPAS ssGSEA score")
+#stat_cor(aes(color = "MAPK_alt_status"))
+
+###################################
+#### OIS_RNA_UP ####
+###################################
+dat1 <- dat[,c(1:4,7)]
+dat1 <- drop_na(dat1)
+dat2 <- dat[,c(1:4,7:8)]
+dat2 <- drop_na(dat2)
+dat3 <- dat1 %>% filter(Broad_entity == "pLGG")
+dat4 <- dat2 %>% filter(Broad_entity == "pLGG")
+###Boxplot by broad entities####
+pdat_summary <- summarySE(dat1, measurevar = "OIS_RNA_UP", groupvars = "Broad_entity") 
+dat1$Broad_entity_NEW<- factor(dat1$Broad_entity, levels=c(pdat_summary[order(pdat_summary$median),"Broad_entity"]))
+
+median_dataset <- median(dat1$OIS_RNA_UP)
+median_pLGG <- median(dat3$OIS_RNA_UP)
+
+for (i in unique(dat1$Broad_entity_NEW)) {
+  dat1[dat1$Broad_entity_NEW == i, "color"] <- ifelse(median(dat1[dat1$Broad_entity_NEW == i, "OIS_RNA_UP"]) < median_dataset, 0,1)
+}
+
+tiff("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-BT66OFF refined OIS-SASP signatures validation in patients/Petralia (z-scores)/OIS_RNA_UP.tiff", 
+     width = 8, height = 7, unit = "cm", res=300)
+ggplot(data = dat1, aes(x = Broad_entity_NEW, y = OIS_RNA_UP, fill = as.factor(color)))+  
+  geom_hline(yintercept= median_dataset, linetype="dashed", color = "black", size=0.5)+
+  geom_hline(yintercept= median_pLGG, linetype="dashed", color = "orange", size=0.5)+
+  stat_boxplot(geom = "errorbar", width = 0.2)+
+  geom_boxplot(outlier.shape = NA, aes(x = Broad_entity_NEW, y = OIS_RNA_UP))+
+  geom_boxplot(outlier.shape = NA, data=dat1[dat1$Broad_entity_NEW=="pLGG",],
+               aes(x = Broad_entity_NEW, y = OIS_RNA_UP),fill="orange")+                                             
+  geom_jitter(position = position_jitter(width = 0.2), color = "grey", size = 0.1)+         
+  labs(y= "OIS_UP_RNAseq (Arbitrary unit)", x = NULL)+
+  scale_fill_manual(values = c("white", "white"))+
+  scale_x_discrete(labels=c("Medulloblastoma" = "Medulloblastoma\n(n=22)",               
+                            "Ependymoma" = "Ependymoma\n(n=32)",
+                            "pHGG" = "pHGG\n(n=25)",
+                            "ATRT" = "ATRT\n(n=12)",
+                            "pLGG" = "pLGG\n(n=110)",
+                            "Craniopharyngioma" = "Craniopharyngioma\n(n=16)"))+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45,vjust = 01, hjust=1, size = 6),
+        axis.text.y = element_text(size = 6),
+        axis.title.y = element_text(size = 6))+
+  guides(fill = "none")
+dev.off()
+
+aov_pdat <- aov(OIS_RNA_UP~Broad_entity_NEW, dat1) 
+summary(aov_pdat)
+Stat_summary<-TukeyHSD(aov_pdat)
+Stat_summary2 <-as.data.frame(Stat_summary[[1]])
+Stat_summary2[Stat_summary2$'p adj'<0.05, ]
+
+
+####Correlation with MPAS####
+ggscatter(dat1, x = "OIS_RNA_UP", y = "PFS_days", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef.label.y = c(4),
+          #col = "MAPK_alt_status",
+          ggtheme = theme_pubr(base_size = 10, legend = c('bottom')),
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "SASP ssGSEA score", ylab = "MPAS ssGSEA score")
+#stat_cor(aes(color = "MAPK_alt_status"))
+
+###################################
+#### SUMMARY ####
+###################################
+dat <- openxlsx::read.xlsx("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-BT66OFF refined OIS-SASP signatures validation in patients/Petralia (z-scores)/Scores all omics layers.xlsx")   
+
+pdat_summary <- summarySE(dat, measurevar = "Median", groupvars = "Broad_entity") 
+dat$Broad_entity_NEW<- factor(dat$Broad_entity, levels=c(pdat_summary[order(pdat_summary$median),"Broad_entity"]))
+
+ggplot(data = dat, aes(x = Broad_entity_NEW, y = Median, col = Score))+  
+  stat_boxplot(geom = "errorbar", width = 0.2)+
+  geom_boxplot(outlier.shape = NA)+                                             
+  geom_jitter(position = position_jitter(width = 0.2), color = "grey", size = 0.1)+         
+  labs(y= "MSS", x = NULL)+
+  #scale_fill_manual(values = c("white", "salmon"))+
+  #scale_x_discrete(labels=c("EWS" = "EWS\n(n=11)",               
+  #                          "MB" = "MB\n(n=122)",
+  #                          "CNS" = "CNS\n(n=18)",
+  #                          "NB" = "NB\n(n=5)",
+  #                          "Normal Tissue" = "Normal Tissue\n(n=2)",
+  #                          "EPN" = "EPN\n(n=93)",
+  #                          "ETMR" = "ETMR\n(n=6)",
+  #                          "SEGA" = "SEGA\n(n=13)",
+  #                          "CHDM" = "CHDM\n(n=6)", 
+  #                          "CRANIO" = "CRANIO\n(n=36)",
+  #                          "HGG" = "HGG\n(n=121)",
+  #                          "GNT" = "GNT\n(n=38)",             
+  #                          "DMG" = "DMG\n(n=68)",
+  #                          "LGG" = "LGG\n(n=285)"))+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45,vjust = 01, hjust=1, size = 6),
+        axis.text.y = element_text(size = 6),
+        axis.title.y = element_text(size = 6))+
+  guides(colour = "none", fill = "none")
+
+tiff("D:/Work/01-OMICs project/000-MANUSCRIPT/Figure 3 - OIS-SASP-MAPK axis - causal pathway/BT66OFF-OIS Pathway only/00-Investigation potential targets/04-BT66OFF refined OIS-SASP signatures validation in patients/Petralia (z-scores)/Summary all OMICs scores.tiff", 
+     width = 8, height = 7, unit = "cm", res=300)
+
+ggplot(data = dat, aes(x = Broad_entity_NEW, y = Median))+
+  stat_boxplot(geom = "errorbar", width = 0.3)+
+  geom_boxplot(outlier.shape = NA, width = 0.5)+
+  geom_boxplot(outlier.shape = NA, data=dat[dat$Broad_entity_NEW=="pLGG",],
+               aes(x = Broad_entity_NEW, y = Median), fill="lightgreen")+
+  geom_jitter(aes(colour = Score), size = 2, position = position_jitter(width = 0.2))+
+  theme(axis.text = element_text(color = "black", size = 6, angle = 45, vjust = 0.5, hjust=1),
+        legend.text = element_text(size = 6),
+        axis.title = element_text(size = 6))+
+  scale_x_discrete(labels=c("Medulloblastoma" = "Medulloblastoma\n(n=22)",               
+                            "Ependymoma" = "Ependymoma\n(n=32)",
+                            "pHGG" = "pHGG\n(n=25)",
+                            "ATRT" = "ATRT\n(n=12)",
+                            "pLGG" = "pLGG\n(n=110)",
+                            "Craniopharyngioma" = "Craniopharyngioma\n(n=16)"))+ 
+  scale_color_manual(values=c("#00A1DF", "#8F1336", "#FF9012"))+
+  labs(y= "Signature score (Arbitrary unit)", x = NULL)+
+  guides(colour = "none", size = "none")
+
+dev.off()
