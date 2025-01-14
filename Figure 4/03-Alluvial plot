@@ -1,0 +1,41 @@
+set.seed(123)
+library("ggpubr")
+library(openxlsx)
+library(tidyverse)
+library(ggforce)
+library(ggalluvial)
+
+data <- read.xlsx(".../Suppl. Table 13.xlsx")
+
+Table <- as.data.frame(table(data$RNAseq, data$Prot, data$Phosprot))   #Var1 = First variable, Var2 = second variable in the line
+
+Table <- gather_set_data(Table, 1:2)
+Table$Var1 <- factor(Table$Var1, levels = c("UP", "Transient UP", "Transient DN", "DN", "nd"))
+Table$Var2 <- factor(Table$Var2, levels = c("UP", "Transient UP", "Transient DN", "DN", "nd"))
+Table$Var3 <- factor(Table$Var3, levels = c("UP", "Transient UP", "Transient DN", "DN", "nd"))
+
+
+tiff(".../Alluvial plot.tiff",
+     width = 13, height = 8, unit = c("cm"), res=300)
+
+ggplot(Table, aes(axis1 = Var1, axis2 = Var2, axis3 = Var3, y = Freq)) +
+  scale_x_discrete(limits = c("RNAseq", "Proteomics", "Phosphoproteomics"), expand = c(.0, .05), position = "top") +
+  xlab("") +
+  ylab("")+
+  #labs(title = "Overlap RNAseq vs Prot")+
+  geom_alluvium(aes(fill = Var1), size = 7) +
+  geom_stratum(width = 0.25) +
+  geom_text(stat = "stratum", size = 1.5, aes(label = after_stat(stratum))) + 
+  theme_minimal() +
+  theme(axis.text = element_text(color = "black", size = 7),
+        text = element_text(size=7),
+        legend.key.height= unit(0.005, 'lines'),
+        legend.key.width= unit(0.005, 'lines'),
+        axis.text.y.left = element_blank())+#,
+        #panel.grid.major.x = element_blank())+
+  scale_fill_manual(breaks = c("UP", "Transient UP", "Transient DN", "DN", "nd"),
+                    values = c("#F76C5E", "#F68E5F", "#5B6BA4", "#324376", "grey"),
+                    name = "Cluster")+
+  guides(fill = guide_legend(override.aes = list(size = 3)))
+
+dev.off()
