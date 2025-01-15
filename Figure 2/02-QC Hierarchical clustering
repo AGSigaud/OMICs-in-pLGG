@@ -1,0 +1,90 @@
+library(RColorBrewer)
+library(dendextend)
+library(tidyverse)
+
+#############################################
+##########QC RNAseq before MEFISTO###########
+#############################################
+# Load your data
+data <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = 1)
+rownames(data) <- data$`Proteomics.(norm..Log2.abundance)`
+data <- data[, -c(1,2)]
+
+# Perform hierarchical clustering on the samples
+# Normalize the data if needed
+normalized_data <- scale(data) 
+dist_matrix <- dist(t(normalized_data)) 
+hc <- hclust(dist_matrix) 
+
+# Convert the hclust object to a dendrogram
+dend <- as.dendrogram(hc)
+
+# Apply the colors to the dendrogram
+par(cex = 0.4)
+
+# Plot the dendrogram
+
+tiff(".../01-QC Clustering_RNAseq.tiff", 
+     width = 12, height = 6, unit = "cm", res=300)
+
+plot(dend, main = "Hierarchical Clustering of Samples")
+
+dev.off()
+
+#############################################
+##########QC Proteomics before MEFISTO###########
+#############################################
+# Load your data
+data <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = 2)
+rownames(data) <- data$`Proteomics.(norm..Log2.abundance)`
+data <- data[, -c(1,2)]
+
+# Perform hierarchical clustering on the samples
+# Normalize the data if needed
+normalized_data <- scale(data) 
+dist_matrix <- dist(t(normalized_data)) 
+hc <- hclust(dist_matrix) 
+
+# Convert the hclust object to a dendrogram
+dend <- as.dendrogram(hc)
+
+# Apply the colors to the dendrogram
+par(cex = 0.4)
+
+# Plot the dendrogram
+
+tiff(".../02-QC Clustering_Prot.tiff", 
+     width = 12, height = 6, unit = "cm", res=300)
+
+plot(dend, main = "Hierarchical Clustering of Samples")
+
+dev.off()
+
+#############################################
+##########QC PhosphoProteomics before MEFISTO###########
+#############################################
+# Load your data
+data <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = 3)
+rownames(data) <- data$`Proteomics.(norm..Log2.abundance)`
+data <- data[, -c(1,2)]
+
+# Perform hierarchical clustering on the samples
+# Normalize the data if needed
+normalized_data <- scale(data) 
+dist_matrix <- dist(t(normalized_data)) 
+hc <- hclust(dist_matrix) 
+
+# Convert the hclust object to a dendrogram
+dend <- as.dendrogram(hc)
+
+# Apply the colors to the dendrogram
+par(cex = 0.4)
+
+# Plot the dendrogram
+
+tiff(".../03-QC Clustering_PhosProt.tiff", 
+     width = 12, height = 6, unit = "cm", res=300)
+
+plot(dend, main = "Hierarchical Clustering of Samples")
+
+dev.off()
