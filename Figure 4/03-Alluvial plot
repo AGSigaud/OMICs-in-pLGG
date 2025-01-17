@@ -5,7 +5,7 @@ library(tidyverse)
 library(ggforce)
 library(ggalluvial)
 
-data <- read.xlsx(".../Suppl. Table 13.xlsx")
+data <- read.xlsx(".../Suppl. Table 16.xlsx")
 
 Table <- as.data.frame(table(data$RNAseq, data$Prot, data$Phosprot))   #Var1 = First variable, Var2 = second variable in the line
 
