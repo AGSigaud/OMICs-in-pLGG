@@ -1,0 +1,42 @@
+#### Libraries ####
+set.seed(123)                                                                   
+library(openxlsx)                                                               
+library(ComplexHeatmap)                                                         
+library(circlize)    
+library(ggplot2)
+
+##########Summary heatmap IFN genes##############
+####1-Prepare DSS table####
+data <- read.xlsx(".../Dataset1.xlsx", sheet = 3)             
+
+selected_IFN_Genes <- c("MX1", "IFIT2", "DDX60", "STAT3", "SAMHD1", "PTPN2", "GMPR", "PLSCR1", "IFITM3", "IFI44", "PARP9", "GBP2", "OAS1", "IFI27", "C1R", "HLA-B", "TAPBP", "IRF9", "CNP", "MVP")
+data1 <- subset(data, Gene.Symbol %in% selected_IFN_Genes)
+rownames(data1) <- data1$Gene.Symbol                                              
+data1 <- data1[,-c(1,2,7:18)]                                                        
+data1 <- as.matrix(data1)                                                       
+data1 <- t(scale(t(data1)))                                                                     
+
+####2-Prepare color parameters to color the heatmap####
+col <- colorRamp2(c(2, 0, -2), c("red", "white", "blue"))                 
+
+####4-Prepare heatmap1 (DSS + drug classes annotation)####
+tiff(".../IFN peptides.tiff",                                  
+     width = 7.5, height = 8, unit = "cm",                                      
+     res=300) 
+
+Heatmap((data1),                                                         
+        name = "Peptide abundance\n(z-score)",                                        
+        col = col,                                                 
+        row_names_gp = gpar(fontsize = 6),                             
+        column_names_gp = gpar(fontsize = 6),                          
+        show_row_names = TRUE,                                           
+        show_column_names = F,                                        
+        column_title = NULL,                                             
+        cluster_columns = T,  
+        cluster_rows = T,
+        heatmap_width = unit(4, "cm"),  
+        height = unit(5.5, "cm"), 
+        row_title = NULL) 
+
+
+dev.off()
