@@ -8,7 +8,7 @@ library(magrittr)
 
 ######RNAseq ssGSEA#######
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 1)
+dat1 <- read.xlsx(".../Suppl. Table 15.xlsx", sheet = 1)
 #Make a matrix
 rownames(dat1) <- dat1$Name
 mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
@@ -230,7 +230,7 @@ dev.off()
 
 ######Proteomics ssGSEA#######
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 2)
+dat1 <- read.xlsx(".../Suppl. Table 15.xlsx", sheet = 2)
 #Make a matrix
 rownames(dat1) <- dat1$Name
 mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
@@ -452,7 +452,7 @@ dev.off()
 
 ######Phospho-Proteomics ssGSEA#######
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 3)
+dat1 <- read.xlsx(".../Suppl. Table 15.xlsx", sheet = 3)
 #Make a matrix
 rownames(dat1) <- dat1$Name
 mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
