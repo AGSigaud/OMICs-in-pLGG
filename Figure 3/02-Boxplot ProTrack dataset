@@ -39,7 +39,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 ###########################                                                                            
 #### Import data table ####
 ###########################
-dat <- openxlsx::read.xlsx(".../Suppl. Table 9.xlsx", sheet = 1)   
+dat <- openxlsx::read.xlsx(".../Suppl. Table 12.xlsx", sheet = 1)   
 
 ###################################
 #### OIS_PhosProt_UP ####
@@ -199,7 +199,7 @@ Stat_summary2[Stat_summary2$'p adj'<0.05, ]
 ###################################
 #### SUMMARY ####
 ###################################
-dat <- openxlsx::read.xlsx(".../Suppl. Table 9.xlsx", sheet = 2)   
+dat <- openxlsx::read.xlsx(".../Suppl. Table 12.xlsx", sheet = 2)   
 
 pdat_summary <- summarySE(dat, measurevar = "Median", groupvars = "Broad_entity") 
 dat$Broad_entity_NEW<- factor(dat$Broad_entity, levels=c(pdat_summary[order(pdat_summary$median),"Broad_entity"]))
