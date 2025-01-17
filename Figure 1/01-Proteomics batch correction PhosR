@@ -10,7 +10,7 @@ library(BiocGenerics)
 library(ggplot2)
 
 ####Step 1: Load dataset####
-data <- read.xlsx("Suppl. Table XXX.xlsx")
+data <- read.xlsx("Suppl. Table 24.xlsx")
 data <- data[,c(1:10, 19:22, 31:34, 43:46, 55:58)]
 #Subset data and only keep intensities
 data1 <- data[,grep("Intensity", colnames(data))]
