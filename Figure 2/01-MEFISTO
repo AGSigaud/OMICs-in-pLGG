@@ -7,19 +7,19 @@ set.seed(2020)
 
 #########Step0 several iterations up to 15 factors to find the optimal number of factors####
 ##Import matrices
-RNAseq <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "RNAseq")
+RNAseq <- read.xlsx(".../Suppl. Table 6.xlsx", sheet = "RNAseq")
 rownames(RNAseq) <- RNAseq$Row.names
 RNAseq <- RNAseq[,-c(1)]
 RNAseq <- data.matrix(RNAseq)
 RNAseq <- t(t(scale(RNAseq)))
 
-Prot <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "Proteomics")
+Prot <- read.xlsx(".../Suppl. Table 6.xlsx", sheet = "Proteomics")
 rownames(Prot) <- Prot$Row.names
 Prot <- Prot[,-c(1)]
 Prot <- data.matrix(Prot)
 Prot <- t(t(scale(Prot)))
 
-Phospho <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = "Phospho-proteomics")
+Phospho <- read.xlsx(".../Suppl. Table 6.xlsx", sheet = "Phospho-proteomics")
 rownames(Phospho) <- Phospho$Row.names
 Phospho <- Phospho[,-c(1)]
 Phospho <- data.matrix(Phospho)
