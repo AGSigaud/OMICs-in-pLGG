@@ -8,7 +8,7 @@ library(ggpubr)
 ###################
 #####RNA SEQUENCING####
 ###################
-data <- as.data.frame(read.xlsx("Suppl. Table 2.xlsx")) #Remove raw 1 first
+data <- as.data.frame(read.xlsx(".../Suppl. Table 2.xlsx")) #Remove raw 1 first
 rownames(data) <- data$Name 
 data15min <- data[,c(2:4)]
 data1h <- data[,c(5:7)]
@@ -103,7 +103,7 @@ dev.off()
 ###################
 #####PROTEOMICS####
 ###################
-data <- as.data.frame(read.xlsx("Suppl. Table 2.xlsx"))
+data <- as.data.frame(read.xlsx(".../Suppl. Table 2.xlsx"))
 rownames(data) <- data$Name 
 data15min <- data[,c(16:20)]
 data1h <- data[,c(21:25)]
@@ -202,7 +202,7 @@ dev.off()
 ##########################
 #####PHOSPHOPROTEOMICS####
 ##########################
-data <- as.data.frame(read.xlsx("Suppl. Table 2.xlsx"))
+data <- as.data.frame(read.xlsx(".../Suppl. Table 2.xlsx"))
 rownames(data) <- data$Name 
 data15min <- data[,c(38:42)]
 data1h <- data[,c(43:47)]
