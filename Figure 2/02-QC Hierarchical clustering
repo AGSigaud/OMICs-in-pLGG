@@ -6,7 +6,7 @@ library(tidyverse)
 ##########QC RNAseq before MEFISTO###########
 #############################################
 # Load your data
-data <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = 1)
+data <- read.xlsx(".../Suppl. Table 6.xlsx", sheet = 1)
 rownames(data) <- data$`Proteomics.(norm..Log2.abundance)`
 data <- data[, -c(1,2)]
 
@@ -35,7 +35,7 @@ dev.off()
 ##########QC Proteomics before MEFISTO###########
 #############################################
 # Load your data
-data <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = 2)
+data <- read.xlsx(".../Suppl. Table 6.xlsx", sheet = 2)
 rownames(data) <- data$`Proteomics.(norm..Log2.abundance)`
 data <- data[, -c(1,2)]
 
@@ -64,7 +64,7 @@ dev.off()
 ##########QC PhosphoProteomics before MEFISTO###########
 #############################################
 # Load your data
-data <- read.xlsx(".../Suppl. Table 5.xlsx", sheet = 3)
+data <- read.xlsx(".../Suppl. Table 6.xlsx", sheet = 3)
 rownames(data) <- data$`Proteomics.(norm..Log2.abundance)`
 data <- data[, -c(1,2)]
 
