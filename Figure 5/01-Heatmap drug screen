@@ -7,7 +7,7 @@ library(ggplot2)
 library(tidyverse)
 library(janitor)
 
-data1 <- read.xlsx(".../Suppl. Table 16.xlsx")             
+data1 <- read.xlsx(".../Suppl. Table 20.xlsx")             
 data1$Single.treatment <- data1$Single.treatment*100
 data1$Combo.Tram.100nM <- data1$Combo.Tram.100nM*100
 data1$Color2 <- as.character(data1$Color2)
