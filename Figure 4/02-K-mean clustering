@@ -8,7 +8,7 @@ library(ggpubr)
 
 #######RNAseq#########
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 1)
+dat1 <- read.xlsx(".../Suppl. Table 15.xlsx", sheet = 1)
 #Make a matrix
 rownames(dat1) <- dat1$Name
 mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
@@ -31,7 +31,7 @@ write.xlsx(clusters, ".../Clusters_RNAseq.xlsx", rowNames = T)
 
 #######Proteomics#########
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 2)
+dat1 <- read.xlsx(".../Suppl. Table 15.xlsx", sheet = 2)
 #Make a matrix
 rownames(dat1) <- dat1$Name
 mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
@@ -54,7 +54,7 @@ write.xlsx(clusters, ".../Clusters_Prot.xlsx", rowNames = T)
 
 #######PhosphoProteomics#########
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 12.xlsx", sheet = 3)
+dat1 <- read.xlsx(".../Suppl. Table 15.xlsx", sheet = 3)
 #Make a matrix
 rownames(dat1) <- dat1$Name
 mat1 <- as.matrix(dat1[,-c(1, 7, 8, 9, 10, 11, 12)])
