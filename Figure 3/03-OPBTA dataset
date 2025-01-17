@@ -38,7 +38,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 ###########################                                                                            
 #### Import data table ####
 ###########################
-dat1 <- openxlsx::read.xlsx(".../Suppl. Table 10.xlsx")   
+dat1 <- openxlsx::read.xlsx(".../Suppl. Table 13.xlsx")   
 
 ###################################
 #### Boxplot by broad entities ####
