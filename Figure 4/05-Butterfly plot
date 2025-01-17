@@ -1,0 +1,35 @@
+#### Libraries ####
+set.seed(123)                                                                   
+library(openxlsx)                                                               
+library(ComplexHeatmap)                                                         
+library(circlize)    
+library(ggplot2)
+
+##########Summary heatmap GSEA##############
+data <- read.xlsx(".../Suppl. Table 15-NEW NEW.xlsx")             
+data <- subset(data, FDR.qval < 0.25)
+
+tiff(".../GSEA summary RNAseq.tiff",                                  
+     width = 12, height = 6.5, unit = "cm",                                      
+     res=300) 
+
+ggplot(data, aes(x = NES, y = reorder(NAME, NES), fill = NES > 0)) +
+  geom_bar(stat = "identity", color = "black") +
+  scale_fill_manual(values = c("TRUE" = "red", "FALSE" = "blue")) +
+  geom_text(aes(label = sprintf("FDR: %.2f", FDR.qval)), hjust = ifelse(data$NES > 0, -0.1, 1.1), size = 1) +
+  theme_minimal() +
+  labs(
+    title = "Butterfly Plot of HALLMARK Gene Signatures",
+    x = "Normalized Enrichment Score (NES)",
+    y = "Gene Signatures",
+    fill = "NES > 0"
+  ) +
+  theme(
+    axis.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 6),
+    text = element_text(size = 6),
+    legend.position = "none"
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0.1, 0.1)))
+
+dev.off()
