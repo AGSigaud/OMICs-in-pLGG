@@ -7,7 +7,7 @@ library(sunburstR)
 
 ######UP regulated pathways#######
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 14.xlsx") #Remove first row in Excel
+dat1 <- read.xlsx(".../Suppl. Table 17.xlsx") #Remove first row in Excel
 data <- dat1[,c(1:11)]
 
 colors_Categories <- pals::cubicyf(n = 18) %>% 
@@ -173,7 +173,7 @@ dev.off()
 
 ######UP regulated pathways#######
 #Import data
-dat1 <- read.xlsx(".../Suppl. Table 14.xlsx") #Remove first row in Excel
+dat1 <- read.xlsx(".../Suppl. Table 17.xlsx") #Remove first row in Excel
 data <- dat1[c(1:44),c(12:22)]
 
 colors_Categories <- pals::cubicyf(n = 17) %>% 
