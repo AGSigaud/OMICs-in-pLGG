@@ -37,7 +37,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 }
 
 ####GRAPHS BT cell lines CTRL####
-dat1 <- read.xlsx(".../Suppl. Table 8.xlsx")
+dat1 <- read.xlsx(".../Suppl. Table 11.xlsx")
 dat1$subtype_new <- factor(dat1$subtype_new, levels = c("BT40_Ctrl",
                                                         "BT314OFF_Ctrl", "BT314ON_Ctrl",
                                                         "BT66_OFF_Ctrl", "BT66_ON_Ctrl",
