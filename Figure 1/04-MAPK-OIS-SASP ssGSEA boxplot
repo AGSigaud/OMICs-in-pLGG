@@ -4,7 +4,7 @@ library(openxlsx)
 library(tidyverse)
 
 #####RNAseq####
-dat1 <- read.xlsx("Suppl. Table 3.xlsx")
+dat1 <- read.xlsx(".../Suppl. Table 4.xlsx")
 dat1$Signature <- factor(dat1$Signature, levels=c("MAPK", "OIS", "SASP"))
 dat1$Time_point <- c(ifelse(dat$Samples == "Ctrl", "9",
                            ifelse(dat$Samples == "0.25", "15",
@@ -40,8 +40,8 @@ ggplot(dat1)  +
   
 dev.off()
 
-#####MPAS vs OIS/SASP all together BT66OFF - Proteomics####
-dat1 <- read.xlsx("Suppl. Table 3.xlsx")
+#####Proteomics####
+dat1 <- read.xlsx(".../Suppl. Table 4.xlsx")
 dat1$Time_point <- c(ifelse(dat$Samples == "Ctrl", "9",
                            ifelse(dat$Samples == "0.25", "15",
                                   ifelse(dat$Samples == "1", "16",
@@ -77,7 +77,7 @@ ggplot(dat1)  +
 dev.off()
 
 #####Phosphoprotomics####
-dat1 <- read.xlsx("Suppl. Table 3.xlsx")
+dat1 <- read.xlsx(".../Suppl. Table 4.xlsx")
 dat1$Time_point <- c(ifelse(dat$Samples == "Ctrl", "9",
                            ifelse(dat$Samples == "0.25", "15",
                                   ifelse(dat$Samples == "1", "16",
