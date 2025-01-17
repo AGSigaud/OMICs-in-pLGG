@@ -6,7 +6,7 @@ library(circlize)
 library(ggplot2)
 
 ##########Summary heatmap GSEA##############
-data <- read.xlsx(".../Suppl. Table 15-NEW NEW.xlsx")             
+data <- read.xlsx(".../Suppl. Table 18.xlsx")             
 data <- subset(data, FDR.qval < 0.25)
 
 tiff(".../GSEA summary RNAseq.tiff",                                  
