@@ -1,5 +1,5 @@
 # Use the official R base image
-FROM r-base:latest
+FROM rocker/r-ver:4.2.1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,9 +10,12 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy your R scripts, data files, and renv.lock into the container
+# Copy R scripts, data files, and renv.lock into the container
 COPY . /app
 
 # Install renv and restore packages
 RUN R -e "install.packages('renv', repos = 'http://cran.rstudio.com/')"
 RUN R -e "renv::restore()"
+
+# Set the default command to execute script
+CMD ["Rscript", "main_script.R"]
